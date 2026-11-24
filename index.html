@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="referrer" content="no-referrer">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-ThQHNIgpCDsNgljdK8H+aIZDMKmFff1dQJk3IUUNdGo='; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src data:; connect-src https://script.google.com https://script.googleusercontent.com; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-C3H1nUYOM0u9W2nCdCtcn0n7ADLhbju80420dhU72VU='; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src data:; connect-src https://script.google.com https://script.googleusercontent.com; base-uri 'none'; form-action 'none'">
 <title>Heures 77</title>
 <!-- Fichier produit par outils/construire-entree.js à partir de src/html/page.html. Ne pas modifier à la main. -->
 <!-- Polices de la charte. Si le chargement échoue, Georgia et Segoe UI prennent le relais : la page reste lisible.
@@ -147,7 +147,7 @@
 // Tout ce que la page doit savoir se lit après le « # » : cette partie de l'adresse ne part jamais vers l'hébergeur.
 (function () {
   'use strict';
-  var EXEC = "https://script.google.com/macros/s/AKfycbxrMezLrxAHMrG_GU1Osa-tLshxGHBr7xdxBqcNxZe9l6isF4a5SeFSM45ggbDYu5RzUg/exec", VERSION = "0.10.0", TEST = false;
+  var EXEC = "https://script.google.com/macros/s/AKfycbxrMezLrxAHMrG_GU1Osa-tLshxGHBr7xdxBqcNxZe9l6isF4a5SeFSM45ggbDYu5RzUg/exec", VERSION = "0.10.1", TEST = false;
   var app = document.getElementById('app');
   function lire(texte) {
     var lu = Object.create(null);
@@ -602,13 +602,22 @@
     var accompagnant = el('select', { id: 'accompagnant', 'aria-describedby': 'aide-accompagnant' }, [option('', e.mandate ? 'Personne' : 'Choisir')].concat(e.accompagnants.map(function (a) { return option(a.id, a.nom); })));
     var nb = el('input', { type: 'text', id: 'heures', inputmode: 'decimal', autocomplete: 'off', 'aria-required': 'true', 'aria-describedby': 'aide-heures' });
     // Un seul compteur ouvert à la personne : il est déjà choisi, elle n'a pas à deviner.
-    var unSeul = e.compteurs.length === 1;
+    // Un serveur ancien n'envoie pas « ouvert » : il n'envoyait que les compteurs ouverts.
+    var ouverts = e.compteurs.filter(function (c) { return c.ouvert !== false; });
+    var fermes = e.compteurs.length - ouverts.length;
+    var unSeul = ouverts.length === 1;
     var compteur = el('select', { id: 'compteur', 'aria-required': 'true', 'aria-describedby': 'aide-compteur' },
-      (unSeul ? [] : [option('', 'Choisir')]).concat(e.compteurs.map(function (c) { return option(c.code, c.libelle); })));
+      (unSeul ? [] : [option('', 'Choisir')]).concat(e.compteurs.map(function (c) {
+        return c.ouvert === false
+          ? el('option', { value: c.code, disabled: 'disabled', texte: c.libelle + ' (réservé aux titulaires de mandat)' })
+          : option(c.code, c.libelle);
+      })));
+    if (unSeul) compteur.value = ouverts[0].code;
     var expliques = e.compteurs.filter(function (c) { return AIDES_COMPTEURS[c.code]; });
     var aideCompteur = el('div', { classe: 'aide', id: 'aide-compteur' }, [
       el('p', { texte: unSeul ? 'Un seul compteur t\'est ouvert : il est déjà choisi.' : 'La réserve d\'heures où la section prend les tiennes.' }),
-      expliques.length ? el('ul', {}, expliques.map(function (c) { return el('li', { texte: '« ' + c.libelle + ' » : ' + AIDES_COMPTEURS[c.code] + '.' }); })) : null
+      expliques.length ? el('ul', {}, expliques.map(function (c) { return el('li', { texte: '« ' + c.libelle + ' » : ' + AIDES_COMPTEURS[c.code] + '.' }); })) : null,
+      fermes ? el('p', { texte: 'Tu vois les quatre compteurs. Sans mandat, tu ne peux demander que sur les compteurs « tous ».' }) : null
     ]);
     var accord = el('input', { type: 'checkbox', id: 'accord', 'aria-required': 'true' });
     // Seule une personne sans mandat doit être accompagnée. Avec un mandat, on ne nomme personne.
