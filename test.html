@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="referrer" content="no-referrer">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-tbpCoMD2bIgktsMDgrINkmgIUjtirtshsyPxV7Eg68g='; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src data:; connect-src https://script.google.com https://script.googleusercontent.com; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-D2wD+piQ6yPC39RAhZr9v/RBaMa+49R6lk/wI+0jvqk='; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src data:; connect-src https://script.google.com https://script.googleusercontent.com; base-uri 'none'; form-action 'none'">
 <title>Heures 77, TEST</title>
 <!-- Fichier produit par outils/construire-entree.js à partir de src/html/page.html. Ne pas modifier à la main. -->
 <!-- Polices de la charte. Si le chargement échoue, Georgia et Segoe UI prennent le relais : la page reste lisible.
@@ -383,7 +383,7 @@
   var ERREURS = {
     jour_j_ou_apres: 'Ce n\'est plus possible le jour même ni après.', statut: 'L\'état de la demande ne le permet pas.',
     hors_delai: 'Le délai d\'un mois est passé.', contestation_deja_ouverte: 'Une contestation est déjà ouverte.',
-    contestation_deja_tranchee: 'Le bureau a déjà tranché sur ce point.', annee_close: 'Les heures de cette année n\'existent plus : il n\'y a rien à restituer.',
+    contestation_deja_tranchee: 'Le bureau a déjà tranché sur ce point.', annee_close: 'Les heures de cette année n\'existent plus : ce geste ne se saisit plus.', contestation_ouverte: 'Une contestation est ouverte sur cette demande : la décision du bureau d\'abord.',
     annee_ouverte: 'Les heures de cette année existent encore : la ligne se règle par la restitution.', etat_de_la_personne: 'Cet état vient de toi : il n\'y a rien à contester.',
     fiche_active: 'Cette fiche est active : la personne peut encore répondre.',
     rien_a_contester: 'Il n\'y a rien à contester sur cette demande.', longueur: 'Écris ta proposition, en 500 caractères au plus.',
@@ -878,6 +878,7 @@
       lignes.push(el('p', { texte: d.contestation.statut === 'ouverte' ? 'Contestation en attente de la prochaine réunion du bureau.'
         : sansObjet ? 'Ta contestation est sans objet : le refus a été levé.'
           : 'Le bureau a statué : ' + (d.contestation.decision === 'accueil' ? 'il t\'a donné raison' : 'il a maintenu la décision') + '.' +
+            (d.contestation.anneeClose ? ' Les heures ' + d.contestation.anneeClose + ' n\'existent plus depuis le 31/12 : la demande ne peut pas se rouvrir. La décision est notée au journal.' : '') +
             (d.contestation.mainRendue ? (d.statut === 'valide' ? ' Le secrétaire va te céder de nouveau les heures. Tu réponds ensuite.' : ' C\'est à toi de répondre.') : '') }));
     }
     if (d.statut === 'close') {
@@ -1383,12 +1384,13 @@
     };
     var aSaisir = t.aSaisir.filter(function (l) { return !l.attenteHeures; }).map(carteSaisie);
     var attenteHeures = t.aSaisir.filter(function (l) { return l.attenteHeures; });
-    var aRestituer = t.aRestituer.map(function (l) {
+    var carteRestitution = function (l) {
       // Année close : les heures n\'existent plus chez l\'employeur. Un seul geste classe la ligne, sans dire « fait » ni « pas fait ».
+      // Tant qu\'une contestation est ouverte sur la demande, le bureau décide d\'abord.
       if (l.anneeClose) {
         return el('div', { classe: 'carte' }, decrire(l).concat([
           el('p', { texte: 'Les heures ' + l.exercice + ' n\'existent plus depuis le 31/12 : il n\'y a rien à restituer.' }),
-          deuxTemps('Classer : année close, rien à restituer', fait('api_saisir', [l.demande, 'classement'], l.demande + ' : ligne classée, année close.'),
+          l.contestee ? el('p', { classe: 'aide', texte: 'Une contestation est ouverte sur cette demande : la décision du bureau d\'abord.' }) : deuxTemps('Classer : année close, rien à restituer', fait('api_saisir', [l.demande, 'classement'], l.demande + ' : ligne classée, année close.'),
             { classe: '', nom: 'Classer : année close, rien à restituer, demande ' + l.demande })]));
       }
       return el('div', { classe: 'carte' }, decrire(l).concat([
@@ -1397,7 +1399,9 @@
           { classe: '', nom: 'J\'ai fait la restitution chez l\'employeur, demande ' + l.demande }),
         deuxTemps('Rien à restituer : l\'absence était déjà posée', fait('api_saisir', [l.demande, 'absence_deja_posee'], l.demande + ' : heures consommées, c\'est noté.'),
           { nom: 'Rien à restituer : l\'absence était déjà posée, demande ' + l.demande })]));
-    });
+    };
+    var aClasser = t.aRestituer.filter(function (l) { return l.anneeClose; }).map(carteRestitution);
+    var aRestituer = t.aRestituer.filter(function (l) { return !l.anneeClose; }).map(carteRestitution);
     var derogations = t.derogeables.map(function (d) {
       // Un seul motif possible : il s\'écrit près du bouton, sans liste à ouvrir.
       var cles = Object.keys(t.motifsDerogation);
@@ -1424,12 +1428,12 @@
     var carteAClore = function (l) {
       return el('div', { classe: 'carte' }, [el('p', { classe: 'num', texte: l.personne + ', le ' + l.date }),
         el('p', { texte: heures(l.heures) + ' sur « ' + l.compteur + ' ». Demande ' + l.demande + ', ' + (l.statut === 'valide' ? 'confirmée, cession non saisie' : 'cédée, sans réponse possible') + '.' + annee(l) }),
-        deuxTemps('Clore sans réponse', fait('api_clore', [l.demande], l.demande + (l.statut === 'valide' ? ' : demande close. Les heures sont libérées.' : ' : demande close. La ligne est dans « Heures à restituer chez l\'employeur ».')),
+        deuxTemps('Clore sans réponse', fait('api_clore', [l.demande], l.demande + (l.raison === 'annee_close' ? ' : demande close.' : l.statut === 'valide' ? ' : demande close. Les heures sont libérées.' : ' : demande close. La ligne est dans « Heures à restituer chez l\'employeur ».')),
           { nom: 'Clore sans réponse, demande ' + l.demande })]);
     };
     var aClore = (t.aClore || []).filter(function (l) { return l.raison !== 'annee_close'; }).map(carteAClore);
     var aCloreAnnee = (t.aClore || []).filter(function (l) { return l.raison === 'annee_close'; }).map(carteAClore);
-    var rien = !aSaisir.length && !attenteHeures.length && !aRestituer.length && !decisions.length && !aClore.length && !aCloreAnnee.length;
+    var rien = !aSaisir.length && !attenteHeures.length && !aRestituer.length && !aClasser.length && !decisions.length && !aClore.length && !aCloreAnnee.length;
     var bloc = function (cartes, titre, texte) { return cartes.length ? [el('h2', { texte: titre }), texte ? el('p', { classe: 'aide', texte: texte }) : null, el('div', {}, cartes)] : []; };
     page('Le travail du jour', [navigation(true), annonce(message), retour,
       rien ? el('p', { classe: 'encadre info', texte: 'Rien à traiter aujourd\'hui.' }) : null
@@ -1440,8 +1444,9 @@
           'Ces demandes sont confirmées et comptent sur ' + a + '. Tu cèdes les heures une fois les heures ' + a + ' reçues et saisies ici.');
       })),
       bloc(aRestituer, 'Heures à restituer chez l\'employeur', 'Une activité annulée, qui n\'a pas eu lieu, ou une demande close sans réponse : les heures reviennent à la section si l\'absence n\'a pas été posée.'),
+      bloc(aClasser, 'Lignes à classer, année close', 'Les heures de cette année n\'existent plus : il n\'y a rien à restituer. Classer ferme la ligne, sans dire « fait » ni « pas fait ».'),
       bloc(aClore, 'Demandes à clore sans réponse', 'La fiche de la personne est désactivée : elle ne peut plus répondre. Tu ne réponds pas à sa place. Clore ne dit ni « fait » ni « pas fait » : une demande cédée passe dans « Heures à restituer chez l\'employeur ».'),
-      bloc(aCloreAnnee, 'Demandes d\'une année close, à clore', 'Les heures de cette année n\'existent plus chez l\'employeur et la cession n\'a pas été saisie. Clore libère les heures. Tu ne déclares rien : la demande ne dit ni « fait » ni « pas fait ».'),
+      bloc(aCloreAnnee, 'Demandes d\'une année close, à clore', 'Les heures de cette année n\'existent plus et la cession n\'a pas été saisie. Clore ferme la demande : tu ne déclares rien, elle ne dit ni « fait » ni « pas fait ».'),
       bloc(decisions, 'Décisions du bureau à noter', 'Le bureau décide en réunion. Ici, tu notes seulement ce qu\'il a décidé.'),
       bloc(derogations, 'Refus que tu peux lever', 'Deux refus seulement : la demande arrivée trop tard, et la demande pas confirmée à temps. Le bureau reçoit un mail à chaque fois.')
     ));
