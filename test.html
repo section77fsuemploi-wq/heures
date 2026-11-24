@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="referrer" content="no-referrer">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-D2wD+piQ6yPC39RAhZr9v/RBaMa+49R6lk/wI+0jvqk='; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src data:; connect-src https://script.google.com https://script.googleusercontent.com; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-xq8xnaLUQSRVdvKwhw+HxQVKpAaiEeSIQRA3C4DoygM='; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src data:; connect-src https://script.google.com https://script.googleusercontent.com; base-uri 'none'; form-action 'none'">
 <title>Heures 77, TEST</title>
 <!-- Fichier produit par outils/construire-entree.js à partir de src/html/page.html. Ne pas modifier à la main. -->
 <!-- Polices de la charte. Si le chargement échoue, Georgia et Segoe UI prennent le relais : la page reste lisible.
@@ -384,6 +384,7 @@
     jour_j_ou_apres: 'Ce n\'est plus possible le jour même ni après.', statut: 'L\'état de la demande ne le permet pas.',
     hors_delai: 'Le délai d\'un mois est passé.', contestation_deja_ouverte: 'Une contestation est déjà ouverte.',
     contestation_deja_tranchee: 'Le bureau a déjà tranché sur ce point.', annee_close: 'Les heures de cette année n\'existent plus : ce geste ne se saisit plus.', contestation_ouverte: 'Une contestation est ouverte sur cette demande : la décision du bureau d\'abord.',
+    heures_couvertes: 'Les heures reçues couvrent cette demande : il n\'y a pas de refus à noter.',
     annee_ouverte: 'Les heures de cette année existent encore : la ligne se règle par la restitution.', etat_de_la_personne: 'Cet état vient de toi : il n\'y a rien à contester.',
     fiche_active: 'Cette fiche est active : la personne peut encore répondre.',
     rien_a_contester: 'Il n\'y a rien à contester sur cette demande.', longueur: 'Écris ta proposition, en 500 caractères au plus.',
@@ -412,11 +413,11 @@
     date_lointaine: 'Cette date est trop lointaine : une demande se dépose pour cette année ou la suivante.',
     exercice: 'Année non admise.', exercice_clos: 'Cette année est close : ses heures ne se rendent plus.'
   };
-  /** Période d'essai : un fait et une consigne, une phrase par motif. Pas de code : il est réservé aux refus réels. */
+  /** Avant le vote de la règle : un fait et une consigne, une phrase par motif. Pas de code : il est réservé aux refus réels. */
   /** Sur la page « Demande refusée » : d'abord quoi faire. */
   var CONSEILS_REFUS = {
     R1: 'Dépose une nouvelle demande, avec une date plus lointaine.',
-    R2: 'Réponds d\'abord à la question sur ta demande passée, puis dépose une nouvelle demande.',
+    R2: 'Réponds sur la carte de cette demande, dans ton espace, puis dépose une nouvelle demande.',
     R3: 'Corrige la demande, puis dépose-la de nouveau.',
     R5: 'Dépose une nouvelle demande pour moins d\'heures.',
     R6: 'Dépose une nouvelle demande.'
@@ -424,6 +425,15 @@
   var DATE_EFFET = '';
   // Année en cours à Paris, lue au dernier appel de l'espace : la page dit l'année d'une demande quand ce n'est pas celle-là.
   var ANNEE = '';
+  var COMMENTAIRE_MAX = 300;
+  /**
+   * Avant la date d'effet : ce que l'outil oppose déjà, ce qu'il calcule seulement. Le vote porte sur la règle,
+   * pas sur l'outil. dateEffet : « jj/mm/aaaa », vide si l'écran ne la connaît pas.
+   */
+  function bandeauAvantVote(dateEffet) {
+    return 'Avant le vote' + (dateEffet ? ' du ' + dateEffet : ' de la règle') + ' : l\'outil applique déjà le délai de prévenance, l\'accompagnement et les compteurs réservés. ' +
+      'Les autres refus de la règle sont calculés et affichés, sans être opposés.';
+  }
   /** Demande acceptée à crédit : la section n'a encore reçu aucune heure de son année. Même phrase que le mail (Messages.phraseReserve). */
   function phraseReserve(annee) {
     return 'Ta demande est acceptée sous réserve : la section n\'a pas encore reçu ses heures ' + annee + '. Le secrétaire te les cède quand elles arrivent.';
@@ -442,9 +452,11 @@
   function phraseEssai(refus, sujet, dateEffet, heures) {
     var d = dateEffet || DATE_EFFET;
     var h = typeof heures === 'number' ? heures : CONFIRMATION_HEURES;
-    var consigne = refus.code === 'R6' && typeof h === 'number' ? 'il faudra confirmer la demande dans les ' + h + ' heures.'
+    var consigne = refus.code === 'R2' && refus.demande && refus.demande.id
+      ? 'il faudra répondre d\'abord sur ta demande ' + refus.demande.id + ' du ' + refus.demande.dateFr + ', en cours, date dépassée, sans réponse.'
+      : refus.code === 'R6' && typeof h === 'number' ? 'il faudra confirmer la demande dans les ' + h + ' heures.'
       : (PHRASES_ESSAI[refus.code] || 'elle s\'appliquera.');
-    return 'Période d\'essai : ' + sujet + (/^le /.test(sujet) ? ' est accepté. ' : ' est acceptée. ') + 'Si la règle est adoptée, ' + (d ? 'à partir du ' + d + ' ' : '') + consigne;
+    return 'Avant le vote : ' + sujet + (/^le /.test(sujet) ? ' est accepté. ' : ' est acceptée. ') + 'Si la règle est adoptée, ' + (d ? 'à partir du ' + d + ' ' : '') + consigne;
   }
   /** Le motif d'abord, en clair ; le code et l'alinéa à la fin, pour qui veut vérifier. */
   function phraseRefus(r) { return r.libelle + ' (' + (r.manuel ? 'alinéa ' + r.alinea : r.code + ', alinéa ' + r.alinea) + ')'; }
@@ -617,7 +629,8 @@
             // Le serveur dit les points en cause (champ et motif) : la page les écrit comme au dépôt.
             var points = c.erreurs && c.erreurs.length ? [el('p', { texte: 'Les points en cause :' }), pointsEnCause(c.erreurs)] : [];
             var conseil = points.length ? 'Dépose une nouvelle demande qui tient compte de ces points.' : (CONSEILS_REFUS[c.refus.code] || 'Dépose une nouvelle demande.');
-            page('Demande refusée', [erreur(refus)].concat(points, [
+            var premiere = c.premiereDatePossible ? [el('p', { texte: 'Première date possible si tu confirmes aujourd\'hui : ' + jourEtDate(c.premiereDatePossible) + '.' })] : [];
+            page('Demande refusée', [erreur(refus)].concat(points, premiere, [
               el('p', { texte: conseil + ' Tu peux aussi contester ce refus dans le mois : ouvre ton lien personnel, puis le bouton « Contester le refus » sous cette demande.' })]));
           }, b);
         }, 'envoi');
@@ -641,7 +654,7 @@
       // Le mot facultatif vient avant les deux boutons : on l'écrit, puis on répond. Oui et non ont le même poids.
       page('Cette activité a-t-elle eu lieu ?', [recap,
         el('p', { texte: 'Réponds oui ou non.' }),
-        el('label', { for: 'mot', texte: 'Un mot à ajouter ? Tu peux laisser vide.' }),
+        el('label', { for: 'mot', texte: 'Commentaire (facultatif)' }),
         aide('aide-mot', 'Ne nomme personne, n\'écris rien sur la santé ou la vie privée. ' + r.commentaireMax + ' caractères au plus.'),
         mot,
         utilise ? el('label', { for: 'utilise', texte: LIBELLE_UTILISATION }) : null,
@@ -845,7 +858,7 @@
     var retour = el('div');
     var agir = function (nom, args, message) {
       return function (b) {
-        appel(nom, args, function (r) {
+        appel(nom, typeof args === 'function' ? args() : args, function (r) {
           if (r.ok) return vueEspace(typeof message === 'function' ? message(r) : message, true);
           dire(retour, r);
         }, b);
@@ -854,10 +867,11 @@
     var lignes = [
       el('p', { classe: 'num', texte: 'Demande ' + d.id }),
       el('p', { texte: resume(d) }),
-      el('p', { texte: 'État : ' + d.statutLibelle + (d.essai ? ' (période d\'essai)' : '') + '.' })
+      el('p', { texte: 'État : ' + d.statutLibelle + (d.essai ? ' (avant le vote de la règle)' : '') + '.' })
     ];
     if (d.exercice && ANNEE && d.exercice !== ANNEE) lignes.push(el('p', { texte: 'Sur les heures ' + d.exercice + '.' }));
     if (d.attenteHeures) lignes.push(el('p', { texte: phraseReserve(d.exercice) }));
+    else if (d.auDelaDesHeures) lignes.push(el('p', { texte: 'Ta demande est acceptée sous réserve : les heures ' + d.exercice + ' reçues par la section ne la couvrent pas encore.' }));
     if (d.statut === 'deposee') lignes.push(el('p', { classe: 'encadre', texte: 'À faire : ouvre le mail « Demande ' + d.id + ' à confirmer » et clique sur « Confirmer ma demande ».' }));
     if (d.refus) lignes.push(el('p', { texte: 'Motif : ' + phraseRefus(d.refus) }));
     if (d.refusNonOppose) lignes.push(el('p', { texte: phraseEssai(d.refusNonOppose, 'ta demande') }));
@@ -878,6 +892,7 @@
       lignes.push(el('p', { texte: d.contestation.statut === 'ouverte' ? 'Contestation en attente de la prochaine réunion du bureau.'
         : sansObjet ? 'Ta contestation est sans objet : le refus a été levé.'
           : 'Le bureau a statué : ' + (d.contestation.decision === 'accueil' ? 'il t\'a donné raison' : 'il a maintenu la décision') + '.' +
+            (d.contestation.restituee ? ' Les heures ont déjà été restituées : la demande ne se rouvre pas. La décision du bureau est notée au journal. Pour de nouvelles heures, dépose une nouvelle demande.' : '') +
             (d.contestation.anneeClose ? ' Les heures ' + d.contestation.anneeClose + ' n\'existent plus depuis le 31/12 : la demande ne peut pas se rouvrir. La décision est notée au journal.' : '') +
             (d.contestation.mainRendue ? (d.statut === 'valide' ? ' Le secrétaire va te céder de nouveau les heures. Tu réponds ensuite.' : ' C\'est à toi de répondre.') : '') }));
     }
@@ -890,14 +905,19 @@
       var utilise = el('input', { type: 'date', id: 'utilise-' + d.id, max: aujourdhuiIso(), 'aria-describedby': 'aide-utilise-' + d.id, 'aria-label': 'Jour où tu as utilisé les heures de la demande ' + d.id });
       // Clé tirée au dessin de la carte : deux appuis rapides sur « Oui » portent la même clé.
       var cleOui = cleUnique();
+      var cleNon = cleUnique();
+      var commentaire = el('textarea', { id: 'commentaire-' + d.id, maxlength: String(COMMENTAIRE_MAX), 'aria-describedby': 'aide-commentaire-' + d.id });
       lignes.push(el('p', { classe: 'encadre', texte: 'À faire : cette activité a-t-elle eu lieu ?' }),
         el('label', { for: 'utilise-' + d.id, texte: LIBELLE_UTILISATION }),
         aide('aide-utilise-' + d.id, AIDE_UTILISATION), utilise,
+        el('label', { for: 'commentaire-' + d.id, texte: 'Commentaire (facultatif)' }),
+        aide('aide-commentaire-' + d.id, 'Ne nomme personne, n\'écris rien sur la santé ou la vie privée. ' + COMMENTAIRE_MAX + ' caractères au plus.'),
+        commentaire,
         bouton('Oui, elle a eu lieu', function (b) {
           if (!utilise.value) return vider(retour).appendChild(erreur(ERREURS.date_utilisation_manquante));
-          agir('api_declarerEtatEspace', [JETON, d.id, 'fait', '', cleOui, dateFr(utilise.value)], 'C\'est noté : elle a eu lieu.')(b);
+          agir('api_declarerEtatEspace', function () { return [JETON, d.id, 'fait', commentaire.value, cleOui, dateFr(utilise.value)]; }, 'C\'est noté : elle a eu lieu.')(b);
         }, '', 'Oui, elle a eu lieu, demande ' + d.id),
-        bouton('Non, elle n\'a pas eu lieu', agir('api_declarerEtatEspace', [JETON, d.id, 'pas_fait', '', cleUnique()], 'C\'est noté : elle n\'a pas eu lieu.'), '', 'Non, elle n\'a pas eu lieu, demande ' + d.id));
+        bouton('Non, elle n\'a pas eu lieu', agir('api_declarerEtatEspace', function () { return [JETON, d.id, 'pas_fait', commentaire.value, cleNon]; }, 'C\'est noté : elle n\'a pas eu lieu.'), '', 'Non, elle n\'a pas eu lieu, demande ' + d.id));
     }
     if (a.reporter) {
       var nouvelle = el('input', { type: 'date', id: 'report-' + d.id, max: d.exercice ? d.exercice + '-12-31' : null });
@@ -926,7 +946,7 @@
       lignes.push(deuxTemps(contester, agir('api_contester', [JETON, d.id, a.contester, cleUnique()], 'Contestation enregistrée. Le bureau statue à sa réunion suivante.'), { nom: contester + ', demande ' + d.id }));
     }
     lignes.push(retour);
-    return el('div', { classe: 'carte' }, lignes);
+    return el('div', { classe: 'carte', id: 'carte-' + d.id }, lignes);
   }
 
   /** garder : ne pas blanchir l'écran pendant le rechargement. message : un texte, ou { texte, genre }. */
@@ -937,6 +957,7 @@
       regle = e.versionRegle;
       DATE_EFFET = e.dateEffet || '';
       ANNEE = e.exerciceCourant || '';
+      if (typeof e.commentaireMax === 'number') COMMENTAIRE_MAX = e.commentaireMax;
       if (typeof e.confirmationHeures === 'number') CONFIRMATION_HEURES = e.confirmationHeures;
       var m = e.miseEnRoute;
       // Le secrétaire qui n'a pas encore fait sa fiche et son lien arrive droit sur la mise en route.
@@ -971,8 +992,16 @@
       // D'abord ce qui attend un geste de la personne, puis le reste, dans l'ordre reçu.
       var triees = e.demandes.filter(attendUnGeste).concat(e.demandes.filter(function (d) { return !attendUnGeste(d); }));
       var demandes = triees.length ? [el('h2', { texte: 'Tes demandes' }), el('div', {}, triees.map(carte))] : [];
-      var nouvelle = [el('h2', { texte: 'Nouvelle demande' }),
-        el('p', { classe: 'aide', texte: 'Les règles sont les mêmes pour tout le monde, secrétaire compris.' }), formulaire(e)];
+      // Une demande passée sans réponse, avant le formulaire : le texte de R2, et la carte où répondre.
+      var attendues = (e.reponsesAttendues || []).map(function (x) {
+        return el('div', { classe: 'encadre' }, [el('p', { texte: x.texte }),
+          bouton('Aller à la demande ' + x.id, function () {
+            var c = typeof document !== 'undefined' && document.getElementById ? document.getElementById('carte-' + x.id) : null;
+            if (c && c.scrollIntoView) c.scrollIntoView();
+          }, 'second', 'Aller à la demande ' + x.id)]);
+      });
+      var nouvelle = attendues.concat([el('h2', { texte: 'Nouvelle demande' }),
+        el('p', { classe: 'aide', texte: 'Les règles sont les mêmes pour tout le monde, secrétaire compris.' }), formulaire(e)]);
       // Sa fiche et son lien sont faits : il ne peut rester que les heures de la section.
       var reste = m && !m.heures;
 
@@ -984,7 +1013,7 @@
           bouton('Gérer la section', function () { ouvrirGestion(reste ? 'route' : 'gestion'); })
         ]) : null,
         e.roles.bureau ? el('p', {}, [bouton('Suivi pour le bureau', vueBureau, 'second')]) : null,
-        e.essai ? el('p', { classe: 'encadre info', texte: 'Période d\'essai jusqu\'au ' + e.dateEffet + ' : l\'outil calcule les refus prévus par la règle soumise au vote et les affiche, sans les opposer.' }) : null
+        e.essai ? el('p', { classe: 'encadre info', texte: bandeauAvantVote(e.dateEffet) }) : null
       ].concat(demandes, nouvelle, [
         el('div', { classe: 'suite' }, [
           el('details', {}, [el('summary', { texte: 'Tes données' }), el('p', { texte: e.mention }), voir, sortie]),
@@ -1004,7 +1033,7 @@
     CHANTIER_OUVERT: 'Chantier ouvert', CHANTIER_CLOS: 'Chantier fermé', LIEN_REVOQUE: 'Lien coupé',
     PERSONNE_AJOUTEE: 'Fiche créée', PERSONNE_MODIFIEE: 'Fiche corrigée', PERSONNE_SUPPRIMEE: 'Fiche supprimée', EXPORT_LISTE: 'Liste exportée'
   };
-  var MOTIFS_GESTES = { fiche_desactivee: 'fiche désactivée', annee_close: 'année close', PRIORITES: 'priorités votées', CHANTIER_CLOS: 'chantier fermé', DOUBLON: 'doublon', accueil: 'raison donnée à la personne', maintien: 'décision maintenue',
+  var MOTIFS_GESTES = { R5: 'plus d\'heures reçues', fiche_desactivee: 'fiche désactivée', annee_close: 'année close', PRIORITES: 'priorités votées', CHANTIER_CLOS: 'chantier fermé', DOUBLON: 'doublon', accueil: 'raison donnée à la personne', maintien: 'décision maintenue',
     R1: 'demande arrivée trop tard', R6: 'demande pas confirmée à temps', CIRCONSTANCE_EXCEPTIONNELLE: 'circonstance exceptionnelle' };
   var ETATS_VISITE = { a_venir: 'à venir', attente_etat: 'en attente de l\'état de réalisation', faite: 'faite', pas_faite: 'pas faite' };
   function valeurReglage(cle, v) {
@@ -1034,6 +1063,7 @@
   /** Une annulation dit ce qu'elle annule quand le serveur le sait. */
   function libelleGeste(a) {
     if (a.type === 'CORRECTION' && ANNULATIONS[a.cible]) return ANNULATIONS[a.cible];
+    if (a.type === 'REFUS_MANUEL' && a.motif === 'R5') return 'Refus : plus d\'heures';
     if (a.type === 'ABSENCE_DEJA_POSEE' && a.motif === 'annee_close') return 'Ligne classée : année close, rien à restituer';
     if (a.type === 'CLOTURE_SANS_REPONSE' && a.motif === 'annee_close') return 'Demande close : année close';
     return GESTES[a.type] || a.type;
@@ -1100,7 +1130,7 @@
         retourEspace(),
         el('p', { texte: 'Tout ce que la section a cédé, demande par demande, et tout ce que le secrétaire a fait. Tu ne peux rien modifier ici.' }),
         el('p', { classe: 'aide', texte: 'Sur téléphone, fais glisser un tableau vers la gauche pour voir la suite.' }),
-        v.essai ? el('p', { classe: 'encadre info', texte: 'Période d\'essai : les refus sont calculés et affichés, aucun n\'est opposé.' }) : null,
+        v.essai ? el('p', { classe: 'encadre info', texte: bandeauAvantVote('') }) : null,
         choix ? el('label', { for: 'b-annee', texte: 'Année' }) : null, choix,
         haut,
         el('h2', { texte: 'Demandes dont le secrétaire n\'a pas encore cédé les heures' }),
@@ -1368,12 +1398,18 @@
     };
     var decrire = function (l) {
       return [el('p', { classe: 'num', texte: l.personne + ', le ' + l.date }),
-        el('p', { texte: heures(l.heures) + ' sur « ' + l.compteur + ' ». ' + l.libelle + '. Demande ' + l.demande + ', ' + depuis(l) + '.' + annee(l) })];
+        el('p', { texte: heures(l.heures) + ' sur « ' + l.compteur + ' ». ' + l.libelle + '. Demande ' + l.demande + ', ' + depuis(l) + '.' + annee(l) }),
+        l.auDelaDesHeures ? el('p', { classe: 'encadre info', texte: 'Au-delà des heures reçues. À toi de décider.' }) : null];
     };
 
     var carteSaisie = function (l) {
       var blocs = decrire(l).concat([deuxTemps('J\'ai saisi chez l\'employeur', fait('api_saisir', [l.demande, l.nature], l.demande + ' : saisie notée.'),
         { classe: '', nom: 'J\'ai saisi chez l\'employeur, demande ' + l.demande })]);
+      // Une demande que les heures reçues ne couvrent pas : refus au titre de R5, sans motif nouveau.
+      if (l.nature === 'cession' && l.auDelaDesHeures) {
+        blocs.push(deuxTemps('Refuser : plus d\'heures', fait('api_refuserHeures', [l.demande], l.demande + ' : refus noté, visible du bureau.'),
+          { nom: 'Refuser : plus d\'heures, demande ' + l.demande }));
+      }
       if (l.nature === 'cession') {
         var motif = el('select', { 'aria-label': 'Motif de refus pour ' + l.demande }, [option('', 'Choisis un motif')].concat(liste(t.motifsRefus)));
         blocs.push(el('details', {}, [el('summary', { texte: 'Refuser cette demande' }),
@@ -1421,6 +1457,7 @@
         c.suite === 'valide' ? el('p', { classe: 'aide', texte: 'Les heures sont déjà restituées chez l\'employeur. Si tu notes que le bureau lui donne raison, la demande repasse en attente de cession : tu les cèdes de nouveau.' }) : null,
         c.suite === 'aucune' ? el('p', { classe: 'aide', texte: c.anneeClose
           ? 'Les heures ' + c.anneeClose + ' n\'existent plus depuis le 31/12 : la demande ne peut pas se rouvrir. La décision est notée au journal.'
+          : c.restituee ? 'Les heures ont déjà été restituées : la demande ne se rouvre pas. Ta décision est notée au journal. Pour de nouvelles heures, la personne dépose une nouvelle demande.'
           : 'Cette demande ne peut pas se rouvrir. Ta décision est notée au journal, rien ne change sur la demande.' }) : null,
         deuxTemps('Le bureau donne raison à la personne', decider(c, 'accueil'), { nom: 'Le bureau donne raison à la personne, demande ' + c.demande }),
         deuxTemps('Le bureau maintient la décision', decider(c, 'maintien'), { nom: 'Le bureau maintient la décision, demande ' + c.demande })]);
@@ -1639,7 +1676,8 @@
       var contenu = [tableau(COLONNES_COMPTEURS, x.compteurs, titre),
         x.statut === 'close' ? el('p', { classe: 'aide', texte: 'Année close le 31/12/' + x.annee + ' à minuit. Le solde n\'est pas reporté.' }) : null,
         x.annee && !x.heuresSaisies ? el('p', { classe: 'aide', texte: 'Les heures ' + x.annee + ' ne sont pas encore saisies.' +
-          (engage ? ' Les demandes déjà confirmées pour ' + x.annee + ' y sont comptées : le solde est négatif en attendant.' : '') }) : null];
+          (engage ? ' Les demandes déjà confirmées pour ' + x.annee + ' y sont comptées : le solde est négatif en attendant.' : '') }) : null,
+        x.depassements ? el('p', { classe: 'encadre info', texte: pluriel(x.depassements, 'demande confirmée dépasse', 'demandes confirmées dépassent') + ' les heures reçues. ' + (x.depassements > 1 ? 'Elles sont marquées' : 'Elle est marquée') + ' dans « Le travail du jour ».' }) : null];
       if (x.statut === 'close') return el('details', {}, [el('summary', { texte: titre })].concat(contenu));
       return el('div', {}, [x.annee ? el('h2', { texte: titre }) : null].concat(contenu));
     });
