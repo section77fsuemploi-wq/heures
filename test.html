@@ -1,0 +1,1346 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-EN/VpvzqL2uOoN0R6ApaHjZkDOUexdEIAWuQBHxeFA4='; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src data:; connect-src https://script.google.com https://script.googleusercontent.com; base-uri 'none'; form-action 'none'">
+<title>Heures 77, TEST</title>
+<!-- Fichier produit par outils/construire-entree.js à partir de src/html/page.html. Ne pas modifier à la main. -->
+<!-- Polices de la charte. Si le chargement échoue, Georgia et Segoe UI prennent le relais : la page reste lisible.
+     Les deux preconnect ouvrent tôt la connexion à la feuille de style et aux fichiers de police. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&amp;family=Public+Sans:wght@400;600;700&amp;display=swap">
+<style>
+  /* Charte FSU Emploi. L'orange est réservé au bouton qui envoie ou confirme et aux encadrés « à faire »,
+     toujours avec un texte à l'encre. Le vert vif et le jaune ne portent jamais de texte. */
+  :root {
+    --bleu: #253182; --bleu-fonce: #1A2466; --bleu-pale: #EEF0F9;
+    --orange: #F39200; --orange-fonce: #E08700; --orange-pale: #FFF4E0;
+    --rouge-vif: #E41B13; --rouge: #B3140F; --rouge-pale: #FDECEA;
+    --vert-vif: #4DA22E; --vert: #1E7A45; --vert-pale: #E5F3EA;
+    --jaune: #FFDD00;
+    --encre: #161922; --gris: #5A6074; --bord: #C9CFE8; --bord-champ: #7C839C;
+    --fond: #FBFBFD; --blanc: #FFFFFF; --bandeau-second: #DCE0F5;
+    --titre: "Playfair Display", Georgia, serif;
+    --texte: "Public Sans", "Segoe UI", system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body { margin: 0; background: var(--fond); color: var(--encre); font: 1rem/1.5 var(--texte); overflow-wrap: break-word; }
+
+  /* Bandeau : logo, nom de la section, puis le filet aux quatre couleurs. */
+  .bandeau { background: var(--bleu); color: var(--blanc); }
+  .bandeau-int { max-width: 42rem; margin: 0 auto; padding: 0.6rem 1rem; display: flex; align-items: center; gap: 0.8rem; }
+  .bandeau img { height: 48px; width: auto; flex: none; display: block; }
+  .marque { margin: 0; display: flex; flex-direction: column; line-height: 1.25; }
+  .marque strong { font-weight: 700; font-size: 1.05rem; }
+  .marque span { font-size: 0.9rem; color: var(--bandeau-second); }
+  .filet { display: flex; height: 5px; border-top: 1px solid var(--blanc); }
+  .filet span { flex: 1; }
+  .f-bleu { background: var(--bleu); } .f-rouge { background: var(--rouge-vif); } .f-jaune { background: var(--jaune); } .f-vert { background: var(--vert-vif); }
+
+  main { max-width: 42rem; margin: 0 auto; padding: 1rem 1rem 3rem; }
+  h1 { font: 700 1.6rem/1.2 var(--titre); color: var(--bleu); margin: 0.75rem 0 1rem; }
+  h2 { font-size: 1.15rem; line-height: 1.3; color: var(--bleu); margin: 2rem 0 0.5rem; border-bottom: 1px solid var(--bord); padding-bottom: 0.25rem; }
+  h3 { font-size: 1rem; line-height: 1.3; color: var(--bleu); margin: 1.2rem 0 0.3rem; }
+  p { margin: 0.5rem 0; }
+  a { color: var(--bleu); }
+  a.lien { display: inline-block; padding: 0.6rem 0; font-weight: 600; }
+  ul { padding-left: 1.2rem; margin: 0.3rem 0; }
+
+  /* Le focus se voit toujours. Le titre reçoit le focus à chaque changement d'écran : son contour ne s'affiche qu'au clavier. */
+  :focus-visible { outline: 3px solid var(--bleu); outline-offset: 2px; }
+  h1:focus { outline: none; }
+  h1:focus-visible { outline: 3px solid var(--bleu); outline-offset: 4px; border-radius: 4px; }
+
+  label { display: block; margin: 0.9rem 0 0.2rem; font-weight: 600; }
+  .aide { color: var(--gris); font-size: 0.9rem; margin: 0.1rem 0 0.3rem; }
+  .aide p { margin: 0.1rem 0; }
+  input[type=text], input[type=date], input[type=email], select, textarea {
+    width: 100%; min-height: 44px; padding: 0.55rem 0.6rem; font: inherit; color: inherit; background: var(--blanc); border: 1px solid var(--bord-champ); border-radius: 8px; }
+  textarea { min-height: 5rem; }
+  .case { display: flex; gap: 0.7rem; align-items: center; min-height: 44px; margin: 1rem 0; }
+  .case input { width: 1.5rem; height: 1.5rem; flex: none; accent-color: var(--bleu); }
+  .case label { margin: 0; font-weight: 400; }
+
+  /* Trois niveaux de boutons : principal (bleu), envoi (orange, texte à l'encre), secondaire (contour bleu). */
+  button { font: inherit; font-weight: 600; min-height: 44px; padding: 0.55rem 1rem; margin: 0.5rem 0.5rem 0 0; border: 2px solid var(--bleu); border-radius: 8px; background: var(--bleu); color: var(--blanc); cursor: pointer; }
+  button:hover { background: var(--bleu-fonce); border-color: var(--bleu-fonce); }
+  button.envoi { background: var(--orange); border-color: var(--orange); color: var(--encre); }
+  button.envoi:hover { background: var(--orange-fonce); border-color: var(--orange-fonce); }
+  button.second { background: var(--blanc); color: var(--bleu); }
+  button.second:hover { background: var(--bleu-pale); border-color: var(--bleu); }
+  /* Bouton à deux temps, armé : il attend le second appui. */
+  button.arme, button.arme:hover { background: var(--rouge-pale); border-color: var(--rouge); color: var(--rouge); }
+  button:disabled { opacity: 0.6; cursor: default; }
+
+  /* Encadrés : « à faire » en orange, information en bleu, réussite en vert, erreur en rouge. */
+  .encadre, .message { border-left: 4px solid var(--orange); background: var(--orange-pale); border-radius: 0 8px 8px 0; padding: 0.7rem 0.9rem; margin: 0.8rem 0; }
+  .encadre.info, .message { border-left-color: var(--bleu); background: var(--bleu-pale); }
+  .encadre.reussite, .message.reussite { border-left-color: var(--vert-vif); background: var(--vert-pale); color: var(--vert); font-weight: 600; }
+  .message.erreur { border-left-color: var(--rouge-vif); background: var(--rouge-pale); color: var(--rouge); }
+  .encadre.test { border: 2px solid var(--orange); border-left-width: 8px; font-weight: 700; }
+  .encadre > p:first-child, .message > p:first-child { margin-top: 0; }
+  .encadre > p:last-child, .message > p:last-child { margin-bottom: 0; }
+
+  .carte { background: var(--blanc); border: 1px solid var(--bord); border-radius: 8px; padding: 0.8rem 0.9rem; margin: 0.8rem 0; }
+  .carte .num { font-weight: 700; margin-top: 0; }
+  pre { white-space: pre-wrap; overflow-wrap: anywhere; background: var(--bleu-pale); padding: 0.7rem; font-size: 0.85rem; border-radius: 8px; }
+  footer { margin-top: 3rem; color: var(--gris); font-size: 0.85rem; border-top: 1px solid var(--bord); padding-top: 0.6rem; }
+  details { margin: 0.8rem 0; }
+  summary { cursor: pointer; min-height: 44px; padding: 0.6rem 0; color: var(--bleu); font-weight: 600; }
+  .empreinte { font-family: ui-monospace, Consolas, monospace; font-size: 0.8rem; overflow-wrap: anywhere; }
+  .suite { margin-top: 2.5rem; border-top: 1px solid var(--bord); }
+
+  /* Tableaux : ils défilent dans leur cadre, la première colonne reste en place. Un mot n'est jamais coupé :
+     un nom long passe à la ligne entre deux mots. */
+  .defile { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 0.6rem 0; background: var(--blanc); border: 1px solid var(--bord); border-radius: 8px; }
+  table { border-collapse: separate; border-spacing: 0; min-width: 100%; font-size: 0.9rem; }
+  th, td { border-bottom: 1px solid var(--bord); border-right: 1px solid var(--bord); padding: 0.45rem 0.6rem; text-align: left; vertical-align: top; background: var(--blanc); overflow-wrap: normal; }
+  thead th { background: var(--bleu-pale); color: var(--bleu); font-weight: 600; vertical-align: bottom; }
+  tbody th { font-weight: 600; }
+  tbody tr:last-child > * { border-bottom: 0; }
+  tr > :last-child { border-right: 0; }
+  td.nom, th.nom, td.fixe { white-space: nowrap; }
+  td.nombre { text-align: right; white-space: nowrap; }
+  .colle { position: sticky; left: 0; z-index: 1; white-space: normal; border-right: 2px solid var(--bord); }
+  thead .colle { z-index: 2; }
+  /* Un nom tient sur une ligne. Sur téléphone seulement, il passe à la ligne entre deux mots, jamais au milieu d'un mot. */
+  tbody .colle.nom { white-space: nowrap; }
+  @media (max-width: 600px) { tbody .colle.nom { width: 9rem; white-space: normal; } }
+  .mot { white-space: nowrap; }
+  td.empreinte { min-width: 15rem; }
+
+  .ligne { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; margin-top: 0.4rem; }
+  .ligne select, .ligne input { width: auto; flex: 1 1 12rem; min-width: 0; max-width: 100%; }
+  .ligne button { margin-top: 0; }
+  .rang { justify-content: space-between; gap: 0.3rem 0.8rem; border-bottom: 1px solid var(--bord); padding: 0.5rem 0; margin-top: 0; }
+  .rang .nomrang { font-weight: 600; flex: 1 1 10rem; }
+  .rang button { margin: 0; }
+
+  /* Lu par les lecteurs d'écran, absent de l'écran. */
+  .hors-ecran { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+
+  /* Téléphone : un bouton par ligne, sur toute la largeur. Deux gestes ne se touchent plus. */
+  @media (max-width: 30rem) {
+    button { display: block; width: 100%; margin: 0.6rem 0 0; }
+    .rang button, .ligne button { width: auto; }
+    .ligne button { flex: 1 1 100%; }
+    h1 { font-size: 1.45rem; }
+  }
+</style>
+</head>
+<body>
+<header class="bandeau">
+  <div class="bandeau-int">
+    <img src="data:image/png;base64,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" alt="FSU Emploi Île-de-France" width="52" height="48">
+    <p class="marque"><strong>FSU Emploi 77</strong><span>Demandes d'heures</span></p>
+  </div>
+  <div class="filet" aria-hidden="true"><span class="f-bleu"></span><span class="f-rouge"></span><span class="f-jaune"></span><span class="f-vert"></span></div>
+</header>
+<main id="app"></main>
+<div id="annonces" class="hors-ecran" aria-live="polite"></div>
+<script>
+// Amorçage de la page d'entrée, écrit par outils/construire-entree.js à la place des scriptlets de Google.
+// Tout ce que la page doit savoir se lit après le « # » : cette partie de l'adresse ne part jamais vers l'hébergeur.
+(function () {
+  'use strict';
+  var EXEC = "https://script.google.com/macros/s/AKfycbwGIGtDPT4hZvmjWE4v0VTvr8CGE3DHLxsvrPaEQBEK-otXtV1BeVVDIhSSlu2EEZGK/exec", VERSION = "0.8.0", TEST = true;
+  var app = document.getElementById('app');
+  function lire(texte) {
+    var lu = Object.create(null);
+    String(texte || '').split('&').forEach(function (bout) {
+      var i = bout.indexOf('=');
+      if (i < 1) return;
+      try { lu[bout.slice(0, i)] = decodeURIComponent(bout.slice(i + 1)); } catch (e) { /* morceau illisible : ignoré */ }
+    });
+    return lu;
+  }
+  // L'adresse de base : tout ce qui précède le premier « ? » ou « # ».
+  var href = String(location.href || '');
+  var coupe = href.search(/[?#]/);
+  var base = coupe < 0 ? href : href.slice(0, coupe);
+  var iq = href.indexOf('?'), id = href.indexOf('#');
+  var recherche = iq >= 0 && (id < 0 || iq < id) ? href.slice(iq + 1, id < 0 ? href.length : id) : '';
+  var lu = lire(String(location.hash || '').replace(/^#/, ''));
+  if (recherche) {
+    // Un jeton posé après un « ? » : repris, placé après le « # », et le « ? » quitte la barre d'adresse.
+    var q = lire(recherche);
+    var repris = false;
+    if (!lu.a && !lu.j) {
+      ['a', 'j', 'p', 'k'].forEach(function (cle) {
+        if (q[cle] && !lu[cle]) { lu[cle] = q[cle]; repris = true; }
+      });
+    }
+    var diese = repris ? ['a', 'j', 'p', 'k'].filter(function (cle) { return lu[cle]; }).map(function (cle) {
+      return cle + '=' + encodeURIComponent(lu[cle]);
+    }).join('&') : String(location.hash || '').replace(/^#/, '');
+    try { window.history.replaceState(null, '', base + (diese ? '#' + diese : '')); } catch (e) { /* adresse laissée telle quelle */ }
+  }
+  // La même décision que doGet. Sans rien de reconnu : l'écran « Ouvre ton espace ».
+  app.dataset.vue = lu.a ? 'action' : lu.j ? 'espace' : lu.p === 'perdu' ? 'perdu' : TEST && lu.p === 'boite' ? 'boite' : 'entree';
+  app.dataset.jeton = String(lu.a || lu.j || '');
+  app.dataset.cle = TEST ? String(lu.k || '') : '';
+  app.dataset.url = EXEC;
+  app.dataset.version = VERSION;
+  app.dataset.entree = base;
+  // Un lien interne ne change que le « # » : la page se recharge pour ouvrir la bonne vue.
+  window.addEventListener('hashchange', function () { location.reload(); });
+})();
+
+(function () {
+  'use strict';
+  var app = document.getElementById('app');
+  var vivant = document.getElementById('annonces');
+  var VUE = app.dataset.vue, JETON = app.dataset.jeton, CLE = app.dataset.cle, URL_APP = app.dataset.url, VERSION = app.dataset.version;
+  // Adresse de la page d'entrée hors Google, posée par son amorçage. Vide quand Google sert la page.
+  var ENTREE = app.dataset.entree || '';
+  var regle = '';
+  var ATTENTE = 'ça prend jusqu\'à 15 secondes';
+  /** Un bouton à deux temps armé revient seul à son état de départ après ce délai. */
+  var DESARMEMENT = 8000;
+
+  /** Espaces insécables : dans les guillemets, avant deux-points, point-virgule, point d'interrogation et pourcentage, entre un nombre et « h ». */
+  function typo(t) {
+    return String(t).replace(/« /g, '«\u00a0').replace(/ »/g, '\u00a0»').replace(/ ([:;?%])/g, '\u00a0$1').replace(/(\d) h(?![a-zà-ÿ])/g, '$1\u00a0h');
+  }
+  function minuscule(t) { return t.charAt(0).toLowerCase() + t.slice(1); }
+
+  // Tout le contenu est posé par textContent : rien de ce qui vient du serveur n'est interprété comme du HTML.
+  function el(balise, attributs, enfants) {
+    var n = document.createElement(balise);
+    Object.keys(attributs || {}).forEach(function (k) {
+      var v = attributs[k];
+      if (v === null || v === undefined) return;
+      if (k === 'texte') n.textContent = typo(v);
+      else if (k === 'clic') n.addEventListener('click', v);
+      else if (k === 'classe') n.className = v;
+      else n.setAttribute(k, v);
+    });
+    (enfants || []).forEach(function (e) { if (e) n.appendChild(typeof e === 'string' ? document.createTextNode(typo(e)) : e); });
+    return n;
+  }
+  function vider(n) { while (n.firstChild) n.removeChild(n.firstChild); return n; }
+  function cleUnique() { return Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 12); }
+  function heures(n) { return String(n).replace('.', ',') + ' h'; }
+  /** Pourcentage arrondi à l'unité, avec une décimale quand l'arrondi tomberait sur le repère sans l'égaler (50,1 % et non 50 %). */
+  function pourcent(x, repere) {
+    var entier = Math.round(x * 100);
+    if (repere !== undefined && x !== repere && entier === Math.round(repere * 100)) return String(Math.round(x * 1000) / 10).replace('.', ',');
+    return String(entier);
+  }
+  function dateFr(iso) { var p = String(iso).substring(0, 10).split('-'); return p.length === 3 ? p[2] + '/' + p[1] + '/' + p[0] : ''; }
+  function pluriel(n, un, plusieurs) { return n + ' ' + (n > 1 ? plusieurs : un); }
+  var JOURS = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
+  /** « jeudi 18/03/2027 » à partir de « 18/03/2027 ». */
+  function jourEtDate(fr) {
+    var p = String(fr).split('/');
+    var jour = JOURS[new Date(Date.UTC(Number(p[2]), Number(p[1]) - 1, Number(p[0]))).getUTCDay()];
+    return (jour ? jour + ' ' : '') + fr;
+  }
+  /** nom : ce que lit un lecteur d'écran quand le même libellé revient plusieurs fois sur l'écran. */
+  function bouton(libelle, action, classe, nom) {
+    return el('button', { type: 'button', classe: classe || '', texte: libelle, 'aria-label': nom, clic: function (ev) { action(ev.currentTarget); } });
+  }
+
+  /** Zone lue à voix haute, toujours présente : elle dit ce qui vient de se passer. */
+  var aDire = '';
+  function annoncer(texte) {
+    if (!vivant || !texte) return;
+    aDire = typo(texte);
+    vivant.textContent = '';
+    setTimeout(function () { vivant.textContent = aDire; }, 100);
+  }
+
+  /**
+   * Appel au serveur. Le bouton cliqué dit qu'il travaille, puis reprend son texte.
+   * Après un succès, il reste désactivé jusqu'à ce que l'écran soit redessiné : un second
+   * appui pendant le rechargement ne repart pas. Après un échec, il se réactive.
+   */
+  function appel(nom, args, suite, b) {
+    // enCours : un appel part de ce bouton. fini : il a réussi, l'écran n'est pas encore redessiné.
+    if (b && (b.enCours || b.fini)) return;
+    var texte = b ? b.textContent : '';
+    var etiquette = b ? b.getAttribute('aria-label') : null;
+    var numero = 0;
+    if (b) {
+      b.envois = (b.envois || 0) + 1;
+      numero = b.envois;
+      b.enCours = true; b.disabled = true; b.textContent = 'Envoi en cours, ' + ATTENTE; if (etiquette) b.removeAttribute('aria-label');
+    }
+    var fin = function (r) {
+      var reussi = !!(r && r.ok);
+      if (b) {
+        b.enCours = false;
+        b.libre = false;
+        b.textContent = texte;
+        if (etiquette) b.setAttribute('aria-label', etiquette);
+        if (!reussi) { b.disabled = false; b.fini = false; }
+      }
+      suite(r || { ok: false, erreur: 'technique' });
+      // La suite a pu relancer un appel depuis le même bouton (geste en deux étapes) : c'est alors
+      // ce second appel qui décide. « libre » : la suite garde ce bouton pour un autre envoi.
+      if (b && reussi && b.envois === numero) {
+        b.fini = !b.libre;
+        b.disabled = !b.libre;
+      }
+    };
+    // Page servie par Google : l'appel passe par google.script.run, comme toujours.
+    if (typeof google !== 'undefined' && google.script && google.script.run) {
+      var run = google.script.run.withSuccessHandler(fin).withFailureHandler(function () { fin(null); });
+      run[nom].apply(run, args);
+      return;
+    }
+    // Page d'entrée hors Google : le même appel, sans cookie, par le doPost de la Web App.
+    // Sans cookie, Google ne voit aucun compte et ne réécrit pas l'adresse.
+    var echec = function () { fin(null); };
+    try {
+      fetch(URL_APP, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ f: nom, a: args }), credentials: 'omit', redirect: 'follow' })
+        .then(function (rep) { return rep.ok ? rep.json() : null; })
+        .then(function (r) { fin(r && typeof r === 'object' ? r : null); }, echec);
+    } catch (x) {
+      echec();
+    }
+  }
+
+  /** Même fabrication que Messages.fabriquerLien, côté serveur : un test vérifie que les deux textes sont égaux. */
+  function fabriquerLien(base, entree, parametre, valeur) {
+    if (entree) return entree + '#' + parametre + '=' + valeur;
+    return base + '?' + parametre + '=' + valeur;
+  }
+  function lien(adresse, libelle) { return el('a', { href: adresse, classe: 'lien', texte: libelle }); }
+  function pied(avecLienPerdu) {
+    return el('footer', {}, [
+      el('p', { texte: 'Version ' + VERSION + '.' + (regle ? ' Règle appliquée : ' + regle + '.' : '') }),
+      avecLienPerdu ? el('p', {}, [lien(fabriquerLien(URL_APP, ENTREE, 'p', 'perdu'), 'Je n\'ai plus mon lien')]) : null
+    ]);
+  }
+  /** Chaque écran : son titre, son contenu, le pied. Le titre reçoit le focus pour que le changement d'écran s'entende. */
+  function page(titre, contenu, avecLienPerdu) {
+    vider(app);
+    var h1 = el('h1', { tabindex: '-1', texte: titre });
+    app.appendChild(h1);
+    contenu.forEach(function (c) { if (c) app.appendChild(c); });
+    app.appendChild(pied(avecLienPerdu));
+    window.scrollTo(0, 0);
+    h1.focus();
+  }
+  function attente(titre) { page(titre, [el('p', { texte: 'Chargement, ' + ATTENTE + '.' })]); }
+  function lienInvalide() {
+    page('Ce lien ne marche plus', [
+      el('p', { texte: 'Si tu viens de te renvoyer un lien, c\'est normal : ouvre le nouveau mail « [Heures 77] Ton lien personnel ».' }),
+      el('p', { texte: 'Si tu venais d\'un mail de confirmation ou d\'état, ta demande se suit depuis ton espace, avec ton lien personnel.' }),
+      el('p', {}, [lien(fabriquerLien(URL_APP, ENTREE, 'p', 'perdu'), 'Recevoir un nouveau lien personnel')])
+    ]);
+  }
+  /** genre : 'info' (défaut), 'reussite' ou 'afaire'. */
+  function encart(texte, genre) { return el('p', { classe: genre === 'afaire' ? 'encadre' : 'message ' + (genre || 'info'), texte: texte }); }
+  /** Une erreur est annoncée tout de suite par les lecteurs d'écran. */
+  function erreur(texte) { return el('p', { classe: 'message erreur', role: 'alert', texte: texte }); }
+  function panne() { return erreur(ERREURS.technique); }
+  /** Message passé d'un écran au suivant : affiché, et lu à voix haute. m : un texte, ou { texte, genre }. */
+  function annonce(m) {
+    if (!m) return null;
+    var texte = typeof m === 'string' ? m : m.texte;
+    annoncer(texte);
+    return encart(texte, typeof m === 'string' ? 'reussite' : m.genre);
+  }
+  function aide(id, texte) { return el('p', { classe: 'aide', id: id, texte: texte }); }
+
+  var CHAMPS = { date: 'Date', type: 'Objet', site: 'Site', chantier: 'Objet', heures: 'Nombre d\'heures', compteur: 'Compteur',
+    accompagnant: 'Accompagnement', consentementTransmission: 'Accord de transmission', heureDebut: 'Heure de début' };
+  var MOTIFS = {
+    manquant: 'à renseigner', format: 'valeur illisible', hors_liste: 'valeur hors liste', jour_non_ouvre: 'ce jour n\'est pas ouvré',
+    non_ouvert: 'ce chantier n\'est pas ouvert', pas_non_admis: 'par demi-heures, ou par demi-journées de 3,75 h',
+    reserve_aux_titulaires_de_mandat: 'compteur réservé aux titulaires de mandat',
+    visite_sans_titulaire_de_mandat: 'sans mandat, on ne visite jamais seul·e : nomme la personne qui t\'accompagne',
+    sans_mandat_a_la_date: 'cette personne n\'a pas de mandat à la date de la visite', soi_meme: 'tu ne peux pas t\'accompagner toi-même'
+  };
+  var ERREURS = {
+    jour_j_ou_apres: 'Ce n\'est plus possible le jour même ni après.', statut: 'L\'état de la demande ne le permet pas.',
+    hors_delai: 'Le délai d\'un mois est passé.', contestation_deja_ouverte: 'Une contestation est déjà ouverte.',
+    contestation_deja_tranchee: 'Le bureau a déjà tranché sur ce point.',
+    rien_a_contester: 'Il n\'y a rien à contester sur cette demande.', longueur: 'Écris ta proposition, en 500 caractères au plus.',
+    trop_de_propositions: 'Trois propositions par jour, pas plus. Reviens demain.',
+    commentaire_trop_long: 'Texte trop long.', avant_le_lendemain_de_la_date: 'La réponse se donne à partir du lendemain de la date.',
+    main_a_une_autre_personne: 'Ce n\'est pas à toi de répondre pour l\'instant.', valeur_hors_liste: 'Réponse non prévue.',
+    demande_non_cedee: 'Cette demande n\'attend pas de réponse sur l\'activité.',
+    demande: 'Demande introuvable.', technique: 'L\'outil n\'a pas pu traiter la demande. Réessaie dans quelques minutes.',
+    motif_manquant: 'Choisis un motif dans la liste.', motif_hors_liste: 'Motif hors liste.', demande_non_valide: 'L\'état de la demande ne le permet plus.',
+    code_non_derogeable: 'Ce refus ne se lève pas.', aucun_refus_de_ce_code: 'Il n\'y a plus de refus de ce type sur cette demande.',
+    solde_insuffisant: 'Il ne reste pas assez d\'heures sur ce compteur.', compteur: 'Compteur inconnu.',
+    heures: 'Écris un nombre, par exemple 150 ou 37,5.',
+    nom: 'Écris le nom et le prénom.', adresse: 'Cette adresse de messagerie n\'est pas valable.',
+    adresse_employeur: 'Adresse France Travail ou Pôle emploi : refusée. Il faut une adresse personnelle.',
+    adresse_deja_prise: 'Cette adresse est déjà celle d\'une autre personne.', personne: 'Personne introuvable.',
+    personne_inactive: 'Cette fiche est désactivée.', aucun_lien: 'Cette personne n\'a pas de lien en ce moment.',
+    secretaire: 'Ce geste n\'est pas possible sur la fiche du secrétaire.', date: 'Date non valable.', chantier: 'Chantier introuvable ou déjà fermé.',
+    fiche_deja_utilisee: 'Cette personne a déjà utilisé l\'outil. Sa fiche se désactive, elle ne se supprime pas.',
+    correction: 'Cet ajout d\'heures ne peut pas être annulé.', parametre: 'Réglage non modifiable.', inchange: 'La valeur est déjà celle-là.', nature: 'Geste inconnu.'
+  };
+  /** Le motif d'abord, en clair ; le code et l'alinéa à la fin, pour qui veut vérifier. */
+  function phraseRefus(r) { return r.libelle + ' (' + (r.manuel ? 'alinéa ' + r.alinea : r.code + ', alinéa ' + r.alinea) + ')'; }
+  /** textes : les phrases propres à l'écran, qui passent avant les phrases générales. */
+  function phraseErreur(r, textes) {
+    if (r.refus) return 'Refus : ' + phraseRefus(r.refus);
+    return (textes && textes[r.erreur]) || ERREURS[r.erreur] || ERREURS.technique;
+  }
+  /** Un lien refusé (lien éteint, fiche désactivée) n'est pas une panne : on dit que le lien ne marche plus. */
+  function dire(zone, r, textes) {
+    if (r.erreur === 'lien' && !(textes && textes.lien)) return lienInvalide();
+    vider(zone).appendChild(erreur(phraseErreur(r, textes)));
+    zone.scrollIntoView();
+  }
+
+  /**
+   * Bouton à deux temps : le premier appui arme, le second agit. Armé, il prend le rouge pâle,
+   * et il se désarme seul au bout de quelques secondes.
+   * options : { classe, nom } ; classe vide pour un bouton principal, nom pour les lecteurs d'écran.
+   */
+  function deuxTemps(libelle, action, options) {
+    var o = options || {};
+    var classe = o.classe === undefined ? 'second' : o.classe;
+    var arme = false, minuterie = null;
+    var b = el('button', { type: 'button', classe: classe, texte: libelle, 'aria-label': o.nom });
+    var desarmer = function () {
+      arme = false;
+      if (minuterie) { clearTimeout(minuterie); minuterie = null; }
+      b.textContent = typo(libelle);
+      b.className = classe;
+      if (o.nom) b.setAttribute('aria-label', o.nom);
+    };
+    b.addEventListener('click', function () {
+      if (!arme) {
+        arme = true;
+        b.textContent = typo('Confirmer : ' + minuscule(libelle));
+        b.className = (classe ? classe + ' ' : '') + 'arme';
+        if (o.nom) b.setAttribute('aria-label', 'Confirmer : ' + minuscule(o.nom));
+        annoncer('Appuie une seconde fois pour confirmer : ' + minuscule(o.nom || libelle) + '.');
+        minuterie = setTimeout(desarmer, DESARMEMENT);
+        return;
+      }
+      desarmer();
+      action(b);
+    });
+    return b;
+  }
+  function option(valeur, libelle) { return el('option', { value: valeur, texte: libelle }); }
+  function resume(d) { return d.objet + (d.site ? ', ' + d.site : '') + ', le ' + d.dateFr + ', ' + heures(d.heures) + ', compteur « ' + d.compteur + ' »'; }
+  var FIN_DE_PAGE = 'Pour suivre ta demande, ouvre le mail « [Heures 77] Ton lien personnel ». Tu peux fermer cette page.';
+
+  /** Un texte mot par mot : il passe à la ligne entre deux mots, jamais au milieu d'un nom. */
+  function mots(texte) {
+    var sortie = [];
+    String(texte).split(' ').forEach(function (m, i) { if (i) sortie.push(' '); sortie.push(el('span', { classe: 'mot', texte: m })); });
+    return sortie;
+  }
+  /** colonnes : [{ titre, cle, type }] avec type 'nom', 'nombre', 'fixe' ou rien. La première colonne reste en place quand le tableau défile. */
+  function tableau(colonnes, lignes, nom) {
+    if (!lignes.length) return el('p', { texte: 'Rien pour l\'instant.' });
+    return el('div', { classe: 'defile', tabindex: '0', role: 'region', 'aria-label': nom }, [el('table', {}, [
+      el('thead', {}, [el('tr', {}, colonnes.map(function (c, i) {
+        return el('th', { scope: 'col', classe: (i ? '' : 'colle ') + (c.type === 'nom' ? 'nom' : ''), texte: c.titre });
+      }))]),
+      el('tbody', {}, lignes.map(function (l) {
+        return el('tr', {}, colonnes.map(function (c, i) {
+          var v = l[c.cle];
+          if (c.type === 'nombre' && typeof v === 'number') v = String(v).replace('.', ',');
+          if (Array.isArray(v)) v = v.join(', ');
+          if (v === true) v = 'oui';
+          if (v === false) v = 'non';
+          v = v === null || v === undefined ? '' : String(v);
+          return i ? el('td', { classe: c.type || '', texte: v }) : el('th', { scope: 'row', classe: 'colle ' + (c.type || '') }, mots(v));
+        }));
+      }))
+    ])]);
+  }
+  var COLONNES_COMPTEURS = [
+    { titre: 'Compteur', cle: 'libelle', type: 'nom' }, { titre: 'Reçu', cle: 'dotation', type: 'nombre' }, { titre: 'Engagé', cle: 'engage', type: 'nombre' },
+    { titre: 'Cédé', cle: 'cede', type: 'nombre' }, { titre: 'Restitué', cle: 'restitue', type: 'nombre' }, { titre: 'Solde', cle: 'solde', type: 'nombre' }
+  ];
+  var AIDE_COMPTEURS = 'Reçu : les heures versées à la section. Engagé : demandé et confirmé. Cédé : saisi chez l\'employeur. Restitué : rendu à la section. Solde : ce qui reste à demander.';
+  /** Ce qu'est chaque compteur, dit à la personne qui remplit le formulaire. */
+  var AIDES_COMPTEURS = {
+    MT: 'le temps de l\'activité elle-même (visite, réunion, travail sur un texte)',
+    ME: 'le temps de l\'activité, sur la part réservée aux titulaires de mandat',
+    DT: 'le temps de trajet pour t\'y rendre',
+    DE: 'le temps de trajet, sur la part réservée aux titulaires de mandat'
+  };
+
+  // ------------------------------------------------------------------ accueil
+  function vueAccueil() {
+    page('Il te faut ton lien personnel', [
+      el('p', { texte: 'Cet outil s\'ouvre avec ton lien personnel. Tu l\'as reçu dans un mail intitulé « [Heures 77] Ton lien personnel ».' })
+    ], true);
+    appel('api_diagnostic', [], function (d) {
+      if (!d.ok || !d.test) return;
+      app.insertBefore(el('p', { classe: 'encadre test', texte: 'Environnement de TEST. Compte de la section : ' + (d.compteDeLaSection ? 'oui' : 'non') +
+        '. Visiteur sans identité : ' + (d.visiteurSansIdentite ? 'oui' : 'non') + '.' }), app.lastChild);
+    });
+  }
+
+  // --------------------------------------------------------------- lien perdu
+  function vuePerdu() {
+    var champ = el('input', { type: 'email', id: 'adresse', autocomplete: 'email', 'aria-describedby': 'aide-adresse' });
+    var retour = el('div');
+    var envoyer = bouton('Recevoir un nouveau lien', function (b) {
+      appel('api_lienPerdu', [champ.value], function (r) {
+        vider(retour);
+        if (!r.ok) return retour.appendChild(panne());
+        retour.appendChild(encart(r.message));
+        annoncer(r.message);
+      }, b);
+    }, 'envoi');
+    page('Lien perdu', [
+      el('p', { texte: 'Indique ton adresse personnelle, celle où la section t\'écrit.' }),
+      el('label', { for: 'adresse', texte: 'Ton adresse' }),
+      aide('aide-adresse', 'Un nouveau lien y part. L\'ancien cesse de marcher.'), champ, envoyer, retour
+    ]);
+  }
+
+  // ------------------------------------------------------------ lien d'action
+  function vueAction() {
+    attente('Demande d\'heures');
+    appel('api_ouvrirAction', [JETON], function (r) {
+      if (!r.ok) return lienInvalide();
+      regle = r.versionRegle;
+      var d = r.demande;
+      var recap = el('div', { classe: 'carte' }, [
+        el('p', { classe: 'num', texte: 'Demande ' + d.id + (r.pour ? ', déposée par ' + r.pour : '') }),
+        el('p', { texte: resume(d) })
+      ]);
+      var retour = el('div');
+      // L'accompagnant·e répond pour la demande de quelqu'un d'autre : il ou elle n'a rien à suivre.
+      var suite = function () { return el('p', { texte: r.pour ? 'Tu peux fermer cette page.' : FIN_DE_PAGE }); };
+      /** La réponse est donnée : la page ne garde que le résultat et la suite. */
+      var fini = function (titre, texte, genre, blocs) {
+        page(titre, [encart(texte, genre)].concat(blocs || [], [suite()]));
+        annoncer(texte);
+      };
+      var dejaTraite = function (c) { fini('Déjà traité', 'Demande ' + d.id + '. État : ' + c.statutLibelle + '.'); };
+
+      if (!r.encoreUtile) {
+        // « Déjà servi » seulement si ce lien a produit son effet ; une demande éteinte entre-temps n'a rien reçu de lui.
+        var constat = r.dejaServi ? 'Ce lien a déjà servi.' : 'Ce lien n\'est plus utile.';
+        return page('Demande d\'heures', [recap, encart(constat + ' État de la demande : ' + r.statutLibelle + '.'), suite()]);
+      }
+      if (r.action === 'CONF') {
+        var confirmer = bouton('Confirmer ma demande', function (b) {
+          appel('api_confirmer', [JETON], function (c) {
+            if (!c.ok) return dire(retour, c);
+            if (c.sansEffet) return dejaTraite(c);
+            if (c.resultat === 'valide') {
+              return fini('C\'est confirmé', 'Demande ' + d.id + ' confirmée. Le secrétaire va la saisir chez France Travail.', 'reussite',
+                c.refusNonOppose ? [el('p', { classe: 'encadre info', texte: 'Période d\'essai : après la date d\'effet votée, cette demande aurait été refusée. ' + phraseRefus(c.refusNonOppose) })] : []);
+            }
+            var refus = 'La demande ' + d.id + ' est refusée. ' + phraseRefus(c.refus);
+            page('Demande refusée', [erreur(refus),
+              el('p', { texte: 'Tu peux contester ce refus dans le mois : ouvre ton lien personnel, puis le bouton « Contester le refus » sous cette demande.' })]);
+          }, b);
+        }, 'envoi');
+        return page('Confirmer une demande d\'heures', [recap,
+          el('p', { texte: r.essaiDemande ? 'Vérifie, puis confirme.' : 'Vérifie, puis confirme. Sans confirmation dans les ' + r.confirmationHeures + ' heures, la demande s\'éteint.' }),
+          r.essaiDemande ? el('p', { classe: 'encadre info', texte: 'Période d\'essai : l\'outil ne refuse rien pour l\'instant. Il te dit seulement quel refus tu aurais reçu.' }) : null,
+          confirmer, retour]);
+      }
+      var mot = el('textarea', { id: 'mot', maxlength: String(r.commentaireMax), 'aria-describedby': 'aide-mot' });
+      var repondre = function (valeur) {
+        return function (b) {
+          appel('api_declarerEtat', [JETON, valeur, mot.value], function (c) {
+            if (!c.ok) return dire(retour, c);
+            if (c.sansEffet) return dejaTraite(c);
+            fini('C\'est noté', 'Demande ' + d.id + ' : ' + (c.valeur === 'fait' ? 'elle a eu lieu.' : 'elle n\'a pas eu lieu.'), 'reussite');
+          }, b);
+        };
+      };
+      // Le mot facultatif vient avant les deux boutons : on l'écrit, puis on répond. Oui et non ont le même poids.
+      page('Cette activité a-t-elle eu lieu ?', [recap,
+        el('p', { texte: 'Réponds oui ou non. Aucun motif n\'est demandé.' }),
+        el('label', { for: 'mot', texte: 'Un mot à ajouter ? Tu peux laisser vide.' }),
+        aide('aide-mot', 'Ne nomme personne, n\'écris rien sur la santé ou la vie privée. ' + r.commentaireMax + ' caractères au plus.'),
+        mot,
+        bouton('Oui, elle a eu lieu', repondre('fait')),
+        bouton('Non, elle n\'a pas eu lieu', repondre('pas_fait')),
+        retour]);
+    });
+  }
+
+  // --------------------------------------------------------- espace personnel
+  /** Une demande attend un geste de la personne : la confirmer, ou dire si l'activité a eu lieu. */
+  function attendUnGeste(d) { return d.statut === 'deposee' || !!d.actions.declarer; }
+
+  function formulaire(e) {
+    var cle = cleUnique();
+    var date = el('input', { type: 'date', id: 'date', 'aria-required': 'true', 'aria-describedby': 'aide-date' });
+    var objet = el('select', { id: 'objet', 'aria-required': 'true' }, [option('', 'Choisir')].concat(e.objets.map(function (o) { return option(o.code, o.libelle); })));
+    var site = el('select', { id: 'site' }, [option('', 'Choisir')]);
+    var secteurs = {};
+    e.sites.forEach(function (s) {
+      if (!secteurs[s.secteur]) { secteurs[s.secteur] = el('optgroup', { label: s.secteur }); site.appendChild(secteurs[s.secteur]); }
+      secteurs[s.secteur].appendChild(option(s.code, s.libelle));
+    });
+    var accompagnant = el('select', { id: 'accompagnant', 'aria-describedby': 'aide-accompagnant' }, [option('', e.mandate ? 'Personne' : 'Choisir')].concat(e.accompagnants.map(function (a) { return option(a.id, a.nom); })));
+    var nb = el('input', { type: 'text', id: 'heures', inputmode: 'decimal', autocomplete: 'off', 'aria-required': 'true', 'aria-describedby': 'aide-heures' });
+    // Un seul compteur ouvert à la personne : il est déjà choisi, elle n'a pas à deviner.
+    var unSeul = e.compteurs.length === 1;
+    var compteur = el('select', { id: 'compteur', 'aria-required': 'true', 'aria-describedby': 'aide-compteur' },
+      (unSeul ? [] : [option('', 'Choisir')]).concat(e.compteurs.map(function (c) { return option(c.code, c.libelle); })));
+    var expliques = e.compteurs.filter(function (c) { return AIDES_COMPTEURS[c.code]; });
+    var aideCompteur = el('div', { classe: 'aide', id: 'aide-compteur' }, [
+      el('p', { texte: unSeul ? 'Un seul compteur t\'est ouvert : il est déjà choisi.' : 'La réserve d\'heures où la section prend les tiennes.' }),
+      expliques.length ? el('ul', {}, expliques.map(function (c) { return el('li', { texte: '« ' + c.libelle + ' » : ' + AIDES_COMPTEURS[c.code] + '.' }); })) : null
+    ]);
+    var accord = el('input', { type: 'checkbox', id: 'accord', 'aria-required': 'true' });
+    var blocVisite = el('div', {}, [
+      el('label', { for: 'site', texte: 'Site' }), site,
+      el('label', { for: 'accompagnant', texte: 'Titulaire de mandat qui t\'accompagne' }),
+      aide('aide-accompagnant', e.mandate ? 'Facultatif pour toi. Chaque titulaire de mandat dépose sa propre demande.' : 'Sans mandat, tu ne visites jamais seul·e.'),
+      accompagnant
+    ]);
+    blocVisite.hidden = true;
+    objet.addEventListener('change', function () { blocVisite.hidden = objet.value !== 'visite'; });
+    var retour = el('div');
+    var envoyer = bouton('Envoyer la demande', function (b) {
+      var f = { date: dateFr(date.value), objet: objet.value, site: site.value, heures: nb.value, compteur: compteur.value,
+        accompagnant: objet.value === 'visite' ? accompagnant.value : '', consentement: accord.checked };
+      appel('api_deposer', [JETON, f, cle], function (r) {
+        vider(retour);
+        if (r.ok) {
+          return vueEspace({ genre: 'afaire', texte: 'Ce n\'est pas fini. Ouvre le mail « Demande ' + r.demande + ' à confirmer » et clique sur « Confirmer ma demande »' + (r.essai ? '.' : ' dans les ' + r.confirmationHeures + ' heures. Sans ça, la demande s\'éteint.') }, true);
+        }
+        if (r.erreurs) {
+          retour.appendChild(el('div', { classe: 'message erreur', role: 'alert' }, [
+            el('p', { texte: 'La demande n\'est pas partie. Corrige ces points :' }),
+            el('ul', {}, r.erreurs.map(function (x) {
+              return el('li', { texte: x.champ === 'consentementTransmission' ? 'Accord de transmission : coche la case.' : (CHAMPS[x.champ] || x.champ) + ' : ' + (MOTIFS[x.motif] || x.motif) });
+            }))
+          ]));
+          retour.scrollIntoView();
+        } else if (r.erreur === 'lien') lienInvalide();
+        else retour.appendChild(panne());
+      }, b);
+    }, 'envoi');
+    // Un état de réalisation attend la personne : on le lui dit avant qu'elle remplisse, pas après le mail de confirmation.
+    var enAttente = e.demandes.filter(function (d) { return d.actions.declarer; }).map(function (d) { return d.id; });
+    return el('div', {}, [
+      enAttente.length ? el('p', { classe: 'encadre', texte: 'Avant une nouvelle demande, réponds à la question sur ' +
+        (enAttente.length > 1 ? 'les demandes ' : 'la demande ') + enAttente.join(', ') + ', plus haut.' }) : null,
+      el('label', { for: 'date', texte: 'Date' }),
+      // Le serveur donne la première date tenable : plus de calcul de tête. Sans elle, on rappelle la règle.
+      aide('aide-date', e.premiereDatePossible
+        ? 'Première date possible si tu confirmes aujourd\'hui : ' + jourEtDate(e.premiereDatePossible) + '. Le délai se compte à partir de ta confirmation, pas de l\'envoi.'
+        : e.mandate ? 'Avec ton mandat : au moins 24 heures avant, plus 2 jours ouvrés pour la saisie.' : 'Sans mandat : au moins 8 jours ouvrés avant, plus 2 jours ouvrés pour la saisie.'), date,
+      el('label', { for: 'objet', texte: 'Objet' }), objet, blocVisite,
+      el('label', { for: 'heures', texte: 'Nombre d\'heures' }),
+      aide('aide-heures', 'Par demi-heures, ou par demi-journées de 3,75 h. Exemple : 7,5.'), nb,
+      el('label', { for: 'compteur', texte: 'Compteur' }), aideCompteur, compteur,
+      el('div', { classe: 'case' }, [accord, el('label', { for: 'accord', texte: 'J\'accepte que la section transmette cette cession à France Travail pour qu\'elle soit saisie.' })]),
+      envoyer, retour
+    ]);
+  }
+
+  /** Changement de date refusé : la demande elle-même n'est pas refusée, on le dit. */
+  var REPORTS = { date_inchangee: 'C\'est déjà la date de ta demande.', jour_non_ouvre: 'Ce jour n\'est pas ouvré.',
+    report_deja_utilise: 'La date a déjà été changée une fois.', jour_j_ou_apres: 'Ce n\'est plus possible le jour même ni après.',
+    sans_mandat_a_la_date: 'La personne qui t\'accompagne n\'a pas de mandat à cette date.',
+    reserve_aux_titulaires_de_mandat: 'Ce compteur est réservé aux titulaires de mandat, et tu n\'en as pas aujourd\'hui.',
+    visite_sans_titulaire_de_mandat: 'Tu n\'as pas de mandat aujourd\'hui, et sans mandat on ne visite jamais seul·e.' };
+  function phraseReport(r, d) {
+    if (!r.refus) return phraseErreur(r);
+    if (r.detail === 'format') return 'Choisis la nouvelle date.';
+    var reference = ' (' + r.refus.code + ', alinéa ' + r.refus.alinea + ').';
+    var garde = ' Ta demande garde sa date du ' + d.dateFr + '.';
+    if (r.refus.code === 'R1') return 'Cette date est trop proche' + reference + garde + ' Choisis une date plus lointaine.';
+    return (REPORTS[r.detail] || r.refus.libelle.replace(/\.$/, '')).replace(/\.$/, '') + reference + garde;
+  }
+
+  function carte(d) {
+    var retour = el('div');
+    var agir = function (nom, args, message) {
+      return function (b) {
+        appel(nom, args, function (r) {
+          if (r.ok) return vueEspace(typeof message === 'function' ? message(r) : message, true);
+          dire(retour, r);
+        }, b);
+      };
+    };
+    var lignes = [
+      el('p', { classe: 'num', texte: 'Demande ' + d.id }),
+      el('p', { texte: resume(d) }),
+      el('p', { texte: 'État : ' + d.statutLibelle + (d.essai ? ' (période d\'essai)' : '') + '.' })
+    ];
+    if (d.statut === 'deposee') lignes.push(el('p', { classe: 'encadre', texte: 'À faire : ouvre le mail « Demande ' + d.id + ' à confirmer » et clique sur « Confirmer ma demande ».' }));
+    if (d.refus) lignes.push(el('p', { texte: 'Motif : ' + phraseRefus(d.refus) }));
+    if (d.refusNonOppose) lignes.push(el('p', { texte: 'Après la date d\'effet votée, cette demande aurait été refusée. ' + phraseRefus(d.refusNonOppose) }));
+    var a = d.actions;
+    if (d.accompagnePar) {
+      lignes.push(el('p', { texte: 'Accompagné·e par ' + d.accompagnePar + '.' +
+        (d.nonConfirmeParAccompagnant ? ' Non confirmé par l\'accompagnant·e' + (a.declarer ? ' : c\'est à toi de répondre.' : '.') : '') }));
+    }
+    if (d.reports) lignes.push(el('p', { texte: 'Date déjà changée une fois.' }));
+    // Le refus contesté a été levé entre-temps : la contestation n'a plus d'objet. Si un nouveau refus
+    // est venu ensuite, la phrase serait fausse : on ne l'écrit pas, et le bouton suit le serveur.
+    var sansObjet = !!d.contestation && d.contestation.statut === 'sans_objet';
+    if (d.contestation && !(sansObjet && (d.statut === 'refusee' || d.statut === 'expiree'))) {
+      lignes.push(el('p', { texte: d.contestation.statut === 'ouverte' ? 'Contestation en attente de la prochaine réunion du bureau.'
+        : sansObjet ? 'Ta contestation est sans objet : le refus a été levé.'
+          : 'Le bureau a statué : ' + (d.contestation.decision === 'accueil' ? 'il t\'a donné raison' : 'il a maintenu la décision') + '.' }));
+    }
+    if (a.declarer) {
+      lignes.push(el('p', { classe: 'encadre', texte: 'À faire : cette activité a-t-elle eu lieu ? Aucun motif n\'est demandé.' }),
+        bouton('Oui, elle a eu lieu', agir('api_declarerEtatEspace', [JETON, d.id, 'fait', '', cleUnique()], 'C\'est noté : elle a eu lieu.'), '', 'Oui, elle a eu lieu, demande ' + d.id),
+        bouton('Non, elle n\'a pas eu lieu', agir('api_declarerEtatEspace', [JETON, d.id, 'pas_fait', '', cleUnique()], 'C\'est noté : elle n\'a pas eu lieu.'), '', 'Non, elle n\'a pas eu lieu, demande ' + d.id));
+    }
+    if (a.reporter) {
+      var nouvelle = el('input', { type: 'date', id: 'report-' + d.id });
+      // Clé tirée au dessin de la carte : deux appuis rapides portent la même clé, un seul report s'écrit.
+      var cleReport = cleUnique();
+      var bloc = el('div', {}, [
+        el('label', { for: 'report-' + d.id, texte: 'Nouvelle date' }),
+        el('p', { classe: 'aide', texte: 'Tu peux changer la date une seule fois, avant le jour prévu.' }), nouvelle,
+        bouton('Valider la nouvelle date', function (b) {
+          if (!nouvelle.value) return vider(retour).appendChild(erreur('Choisis la nouvelle date.'));
+          appel('api_reporter', [JETON, d.id, dateFr(nouvelle.value), cleReport], function (r) {
+            if (r.ok) {
+              return vueEspace('Demande ' + d.id + ' : nouvelle date, le ' + r.nouvelleDate + '.' +
+                (r.refusNonOppose ? ' Période d\'essai : après la date d\'effet votée, ce changement aurait été refusé.' : ''), true);
+            }
+            if (r.erreur === 'lien') return lienInvalide();
+            vider(retour).appendChild(erreur(phraseReport(r, d)));
+          }, b);
+        }, '', 'Valider la nouvelle date de la demande ' + d.id)]);
+      bloc.hidden = true;
+      lignes.push(bouton('Changer la date', function (b) { bloc.hidden = false; b.remove(); nouvelle.focus(); }, 'second', 'Changer la date de la demande ' + d.id), bloc);
+    }
+    if (a.annuler) lignes.push(deuxTemps('Annuler la demande', agir('api_annuler', [JETON, d.id, cleUnique()], 'Demande ' + d.id + ' annulée.'), { nom: 'Annuler la demande ' + d.id }));
+    if (a.contester) {
+      var contester = a.contester === 'refus' ? 'Contester le refus' : 'Contester l\'état';
+      lignes.push(deuxTemps(contester, agir('api_contester', [JETON, d.id, a.contester, cleUnique()], 'Contestation enregistrée. Le bureau statue à sa réunion suivante.'), { nom: contester + ', demande ' + d.id }));
+    }
+    lignes.push(retour);
+    return el('div', { classe: 'carte' }, lignes);
+  }
+
+  /** garder : ne pas blanchir l'écran pendant le rechargement. message : un texte, ou { texte, genre }. */
+  function vueEspace(message, garder) {
+    if (!garder) attente('Ton espace');
+    appel('api_espace', [JETON], function (e) {
+      if (!e.ok) return e.erreur === 'lien' ? lienInvalide() : page('Ton espace', [panne()]);
+      regle = e.versionRegle;
+      var m = e.miseEnRoute;
+      // Le secrétaire qui n'a pas encore fait sa fiche et son lien arrive droit sur la mise en route.
+      if (e.roles.admin && m && (!m.fiche || !m.lien)) return ouvrirGestion('route', null, message);
+
+      var sortie = el('div');
+      var voir = bouton('Voir tout ce que l\'outil garde sur moi', function (b) {
+        appel('api_exporter', [JETON], function (r) {
+          vider(sortie);
+          if (!r.ok) return sortie.appendChild(panne());
+          sortie.appendChild(el('p', { texte: pluriel(r.export.evenements.length, 'événement te concerne', 'événements te concernent') + ', sous ton nom : ' + r.export.identite.prenom + ' ' + r.export.identite.nom + ', ' + r.export.identite.adresse + '.' }));
+          // L'export est une copie exacte : il n'est pas retouché par la typographie.
+          var brut = el('pre');
+          brut.textContent = JSON.stringify(r.export, null, 2);
+          sortie.appendChild(el('details', {}, [el('summary', { texte: 'Version complète, pour une demande d\'accès à tes données' }), brut]));
+        }, b);
+      }, 'second');
+      var idee = el('textarea', { id: 'idee', maxlength: '500' });
+      var retourIdee = el('div');
+      var proposer = bouton('Envoyer la proposition', function (b) {
+        appel('api_proposer', [JETON, idee.value], function (r) {
+          vider(retourIdee);
+          if (!r.ok) return retourIdee.appendChild(erreur(phraseErreur(r)));
+          retourIdee.appendChild(encart('Proposition enregistrée.', 'reussite'));
+          annoncer('Proposition enregistrée.');
+          idee.value = '';
+          // Le champ est vidé : le bouton sert à la proposition suivante.
+          b.libre = true;
+        }, b);
+      }, 'second');
+
+      // D'abord ce qui attend un geste de la personne, puis le reste, dans l'ordre reçu.
+      var triees = e.demandes.filter(attendUnGeste).concat(e.demandes.filter(function (d) { return !attendUnGeste(d); }));
+      var demandes = triees.length ? [el('h2', { texte: 'Tes demandes' }), el('div', {}, triees.map(carte))] : [];
+      var nouvelle = [el('h2', { texte: 'Nouvelle demande' }),
+        el('p', { classe: 'aide', texte: 'Les règles sont les mêmes pour tout le monde, secrétaire compris.' }), formulaire(e)];
+      // Sa fiche et son lien sont faits : il ne peut rester que les heures de la section.
+      var reste = m && !m.heures;
+
+      page('Ton espace', [
+        el('p', { texte: 'Bonjour ' + e.prenom + '.' }),
+        annonce(message),
+        e.roles.admin ? el('div', { classe: reste ? 'encadre' : 'encadre info' }, [
+          el('p', { texte: 'Tu es secrétaire de la section.' + (reste ? ' Il reste une étape de mise en route : les heures de la section.' : '') }),
+          bouton('Gérer la section', function () { ouvrirGestion(reste ? 'route' : 'gestion'); })
+        ]) : null,
+        e.roles.bureau ? el('p', {}, [bouton('Suivi pour le bureau', vueBureau, 'second')]) : null,
+        e.essai ? el('p', { classe: 'encadre info', texte: 'Période d\'essai jusqu\'au ' + e.dateEffet + ' : l\'outil calcule les refus et les affiche, sans en opposer aucun.' }) : null
+      ].concat(demandes, nouvelle, [
+        el('div', { classe: 'suite' }, [
+          el('details', {}, [el('summary', { texte: 'Tes données' }), el('p', { texte: e.mention }), voir, sortie]),
+          el('details', {}, [el('summary', { texte: 'Proposer une amélioration' }),
+            el('label', { for: 'idee', texte: 'Ta proposition' }), idee, proposer, retourIdee])
+        ])
+      ]));
+    });
+  }
+
+  // ------------------------------------------------------------ vue du bureau
+  var GESTES = {
+    SAISIE_CESSION: 'Cession saisie', SAISIE_MODIF_DATE: 'Changement de date saisi', SAISIE_RESTITUTION: 'Heures rendues',
+    ABSENCE_DEJA_POSEE: 'Rien à rendre, absence déjà posée', REFUS_MANUEL: 'Refus', DEROGATION: 'Dérogation',
+    DECISION_CONTESTATION: 'Décision du bureau notée', DOTATION: 'Heures reçues ajoutées', CORRECTION: 'Ajout d\'heures annulé',
+    PARAM_MODIF: 'Réglage changé', STATUT_MANDAT: 'Mandat changé', ROLE_BUREAU: 'Composition du bureau changée',
+    CHANTIER_OUVERT: 'Chantier ouvert', CHANTIER_CLOS: 'Chantier fermé', LIEN_REVOQUE: 'Lien coupé',
+    PERSONNE_AJOUTEE: 'Fiche créée', PERSONNE_MODIFIEE: 'Fiche corrigée', PERSONNE_SUPPRIMEE: 'Fiche supprimée', EXPORT_LISTE: 'Liste exportée'
+  };
+  var MOTIFS_GESTES = { PRIORITES: 'priorités votées', CHANTIER_CLOS: 'chantier fermé', DOUBLON: 'doublon', accueil: 'raison donnée à la personne', maintien: 'décision maintenue',
+    R1: 'demande arrivée trop tard', R6: 'demande pas confirmée à temps', CIRCONSTANCE_EXCEPTIONNELLE: 'circonstance exceptionnelle' };
+  var ETATS_VISITE = { a_venir: 'à venir', attente_etat: 'en attente de l\'état de réalisation', faite: 'faite', pas_faite: 'pas faite' };
+  function valeurReglage(cle, v) {
+    if (v === null || v === undefined) return '';
+    return cle === 'date_effet_regles' ? dateFr(v) : String(v).replace('.', ',');
+  }
+  /** Ce que la colonne « Motif » dit d'un geste : pour un réglage, lequel et ses valeurs ; pour une dérogation, le motif choisi et le refus levé. */
+  function motifGeste(a) {
+    if (a.type === 'PARAM_MODIF' && a.parametre) {
+      return (REGLAGES[a.parametre] ? REGLAGES[a.parametre].court : a.parametre) + ' : de ' + valeurReglage(a.parametre, a.avant) + ' à ' + valeurReglage(a.parametre, a.apres);
+    }
+    if (a.type === 'DEROGATION') {
+      var leve = MOTIFS_GESTES[a.code || a.motif];
+      var choisi = a.code ? (MOTIFS_GESTES[a.motif] || a.motif) : '';
+      return [choisi, leve ? 'refus levé : ' + leve : ''].filter(function (x) { return x; }).join(', ');
+    }
+    return MOTIFS_GESTES[a.motif] || a.motif;
+  }
+  function retourEspace() { return el('p', {}, [bouton('Revenir à mon espace', function () { vueEspace(''); }, 'second')]); }
+
+  function vueBureau() {
+    attente('Suivi pour le bureau');
+    appel('api_consultation', [JETON], function (r) {
+      if (!r.ok) return r.erreur === 'lien' ? lienInvalide() : page('Suivi pour le bureau', [panne()]);
+      var v = r.vue;
+      regle = v.versionRegle;
+      var part = v.partSansMandat;
+      var gestes = v.actionsAdmin.map(function (a) { return { date: dateFr(a.date), geste: GESTES[a.type] || a.type, demande: a.demande, motif: motifGeste(a) }; });
+      var visites = v.visites.map(function (x) { return { date: x.date, site: x.site, equipe: x.equipe, etat: ETATS_VISITE[x.etat] || (x.faite ? 'faite' : '') }; });
+      var temoins = v.temoins || [];
+      page('Suivi pour le bureau', [
+        retourEspace(),
+        el('p', { texte: 'Tout ce que la section a cédé, demande par demande, et tout ce que le secrétaire a fait. Tu ne peux rien modifier ici.' }),
+        el('p', { classe: 'aide', texte: 'Sur téléphone, fais glisser un tableau vers la gauche pour voir la suite.' }),
+        v.essai ? el('p', { classe: 'encadre info', texte: 'Période d\'essai : les refus sont calculés et affichés, aucun n\'est opposé.' }) : null,
+        el('h2', { texte: 'Heures de la section' }),
+        tableau(COLONNES_COMPTEURS.concat([{ titre: 'Solde au 31/12, au rythme actuel', cle: 'projection', type: 'nombre' }]), v.compteurs, 'Heures de la section'),
+        el('p', { classe: 'aide', texte: AIDE_COMPTEURS }),
+        el('p', { texte: 'Déplacements : ' + heures(v.deplacement.engage) + ' engagées sur ' + heures(v.deplacement.dotation) + ' reçues.' }),
+        el('p', { texte: 'Part cédée à des personnes sans mandat : ' + pourcent(part.part, part.seuil) + ' % (' + heures(part.sansMandat) + ' sur ' + heures(part.total) + '). Repère de la section : ' + Math.round(part.seuil * 100) + ' %' + (part.alerte ? ', dépassé.' : '.') + ' Le plafond de l\'accord s\'apprécie au niveau de l\'établissement.' }),
+        el('h2', { texte: 'Par personne' }),
+        el('p', { classe: 'aide', texte: 'Une ligne par personne, au même format pour tout le monde, secrétaire compris, par ordre alphabétique.' }),
+        tableau([
+          { titre: 'Personne', cle: 'personne', type: 'nom' }, { titre: 'Heures demandées', cle: 'heuresDemandees', type: 'nombre' },
+          { titre: 'Cédées', cle: 'heuresCedees', type: 'nombre' }, { titre: 'Restituées', cle: 'heuresRestituees', type: 'nombre' },
+          { titre: 'Demandes', cle: 'demandes', type: 'nombre' }, { titre: 'Fait', cle: 'faits', type: 'nombre' }, { titre: 'Pas fait', cle: 'pasFaits', type: 'nombre' },
+          { titre: 'Annulé', cle: 'annules', type: 'nombre' }, { titre: 'Dates changées', cle: 'reports', type: 'nombre' }, { titre: 'Dérogations', cle: 'derogations', type: 'nombre' },
+          { titre: 'Refus du secrétaire', cle: 'refusManuels', type: 'nombre' }, { titre: 'Contestations', cle: 'contestations', type: 'nombre' }
+        ], v.personnes, 'Par personne'),
+        el('h2', { texte: 'Visites de sites' }),
+        tableau([{ titre: 'Date', cle: 'date', type: 'fixe' }, { titre: 'Site', cle: 'site', type: 'nom' }, { titre: 'Équipe', cle: 'equipe', type: 'nom' }, { titre: 'Où elle en est', cle: 'etat', type: 'nom' }], visites, 'Visites de sites'),
+        el('p', { texte: 'Sites sans visite sur l\'exercice : ' + (v.sitesNonVisites.length ? v.sitesNonVisites.join(', ') + '.' : 'aucun.') }),
+        el('h2', { texte: 'Demandes que le secrétaire n\'a pas encore saisies' }),
+        tableau([{ titre: 'Demande', cle: 'demande', type: 'fixe' }, { titre: 'Personne', cle: 'personne', type: 'nom' }, { titre: 'En attente depuis (jours)', cle: 'jours', type: 'nombre' }], v.attenteSaisie, 'Demandes pas encore saisies'),
+        el('h2', { texte: 'Toutes les demandes' }),
+        tableau([
+          { titre: 'Demande', cle: 'demande', type: 'fixe' }, { titre: 'Personne', cle: 'personne', type: 'nom' }, { titre: 'Date', cle: 'date', type: 'fixe' },
+          { titre: 'Objet', cle: 'objet', type: 'nom' }, { titre: 'Heures', cle: 'heures', type: 'nombre' }, { titre: 'État', cle: 'etat', type: 'nom' },
+          { titre: 'Accompagné·e par', cle: 'accompagnePar', type: 'nom' }, { titre: 'Refus', cle: 'refus' }, { titre: 'Dérogations', cle: 'derogations' },
+          { titre: 'Contestation', cle: 'contestation', type: 'nom' }
+        ], v.journal, 'Toutes les demandes'),
+        el('h2', { texte: 'Ce que le secrétaire a fait' }),
+        tableau([{ titre: 'Date', cle: 'date', type: 'fixe' }, { titre: 'Geste', cle: 'geste', type: 'nom' }, { titre: 'Demande', cle: 'demande', type: 'fixe' }, { titre: 'Motif', cle: 'motif', type: 'nom' }], gestes, 'Ce que le secrétaire a fait'),
+        v.rapprochement.date ? el('p', { texte: 'Dernier rapprochement avec le classeur de référence le ' + dateFr(v.rapprochement.date) + '. Cessions sans demande : ' + v.rapprochement.cessionsSansDemande + '.' }) : null,
+        el('details', {}, [
+          el('summary', { texte: 'Vérifier que le journal n\'a pas été réécrit' }),
+          el('p', { texte: 'Le journal compte ' + v.temoin.evenements + ' événements. Empreinte de la dernière ligne :' }),
+          el('p', { classe: 'empreinte', texte: v.temoin.empreinte }),
+          el('h3', { texte: 'Témoins envoyés' }),
+          // Pour chaque témoin parti par mail : l'empreinte que porte aujourd'hui la ligne du même numéro.
+          temoins.length ? tableau([{ titre: 'Date', cle: 'date', type: 'fixe' }, { titre: 'Nombre d\'événements', cle: 'evenements', type: 'nombre' },
+            { titre: 'Empreinte', cle: 'empreinte', type: 'empreinte' }], temoins, 'Témoins envoyés') : el('p', { texte: 'Aucun témoin envoyé pour l\'instant.' }),
+          el('p', { classe: 'aide', texte: 'Compare avec ton mail du même jour : même nombre d\'événements, même empreinte. Si l\'empreinte diffère, le journal a été réécrit.' })
+        ])
+      ]);
+    });
+  }
+
+  // -------------------------------------------------------- gérer la section
+  var G = { tableau: null, personnes: null };
+
+  /** Recharge les deux jeux de données du secrétaire, en parallèle, sans toucher à l'écran. */
+  function chargerGestion(suite) {
+    var reste = 2, echec = null;
+    var fin = function (cle) {
+      return function (r) {
+        if (r.ok) G[cle] = r; else echec = r;
+        reste--;
+        if (reste) return;
+        if (echec) return echec.erreur === 'lien' ? lienInvalide() : page('Gérer la section', [panne()]);
+        regle = G.tableau.versionRegle;
+        suite();
+      };
+    };
+    appel('api_tableau', [JETON], fin('tableau'));
+    appel('api_personnes', [JETON], fin('personnes'));
+  }
+  var ECRANS = {};
+  function aller(cible, arg, message) { (ECRANS[cible] || ECRANS.gestion)(message || '', arg); }
+  function ouvrirGestion(cible, arg, message) { attente('Gérer la section'); chargerGestion(function () { aller(cible, arg, message); }); }
+  /** Après un geste réussi : recharger sans blanchir, puis afficher l'écran voulu avec son message. textes : les erreurs dites avec les mots de l'écran. */
+  function suiteGeste(cible, arg, message, zone, textes) {
+    return function (r) {
+      if (!r.ok) return dire(zone, r, textes);
+      chargerGestion(function () { aller(cible, arg, typeof message === 'function' ? message(r) : message); });
+    };
+  }
+  /** Adresse déjà portée par une autre fiche : dire laquelle, et proposer d'y aller, ou la sortie donnée par l'écran. */
+  function direAdressePrise(zone, chez, sortie) {
+    vider(zone).appendChild(el('div', { classe: 'message erreur', role: 'alert' }, [
+      el('p', { texte: 'Cette adresse est déjà sur une autre fiche : ' + chez.nom + ' ' + chez.prenom + ' (' + chez.id + ').' })
+    ].concat(sortie || [bouton('Ouvrir cette fiche', function () { aller('fiche', chez.id); }, 'second')])));
+    zone.scrollIntoView();
+  }
+  /** Trois étapes obligatoires : sa fiche, son lien, les heures de la section. Les personnes et les chantiers viennent ensuite, sans rouvrir la mise en route. */
+  function routeFinie() { var m = G.tableau.miseEnRoute; return m.fiche && m.lien && m.heures; }
+  function moi() { return G.personnes.personnes.filter(function (p) { return p.secretaire; })[0]; }
+  function nomDe(p) { return p.nom + ' ' + p.prenom; }
+  /** Un seul retour par écran : vers le sommaire, ou vers la mise en route tant qu'elle n'est pas finie. */
+  function navigation(sousEcran) {
+    return el('p', {}, [
+      sousEcran
+        ? bouton(routeFinie() ? 'Revenir à « Gérer la section »' : 'Revenir à la mise en route', function () { aller(routeFinie() ? 'gestion' : 'route'); }, 'second')
+        : bouton('Revenir à mon espace', function () { vueEspace(''); }, 'second')
+    ]);
+  }
+
+  // --- mise en route
+  ECRANS.route = function (message) {
+    var m = G.tableau.miseEnRoute;
+    var retour = el('div');
+    var etape = function (n, titre, fait, phrase, action) {
+      return el('div', { classe: 'carte' }, [
+        el('p', { classe: 'num', texte: n + '. ' + titre + ' : ' + (fait ? 'fait' : 'à faire') }),
+        el('p', { texte: phrase }), action
+      ]);
+    };
+    var envoyerMonLien = bouton('M\'envoyer mon lien', function (b) {
+      appel('api_gererLien', [JETON, moi().id, 'envoyer'], function (r) { if (r.ok) return vueFinLien(moi().mail); dire(retour, r); }, b);
+    }, 'envoi');
+    var pret = m.fiche && m.lien;
+    var phraseLien = !m.fiche ? 'Fais d\'abord l\'étape 1.'
+      : m.lien ? 'Ton lien est parti à ' + moi().mail + '. Pour en recevoir un autre, ouvre ta fiche.'
+        : 'Tu reçois ton lien à l\'adresse de ta fiche (' + moi().mail + '). Ensuite, cette page ne marchera plus : tu continueras depuis le nouveau mail.';
+    page('Mise en route de l\'outil', [
+      routeFinie() ? null : el('p', { texte: 'Trois étapes, dans l\'ordre. Tu peux t\'arrêter et reprendre : l\'outil se souvient où tu en es.' }),
+      annonce(message), retour,
+      etape(1, 'Ta fiche', m.fiche, 'Écris ton nom, ton prénom et ton adresse personnelle.',
+        bouton(m.fiche ? 'Revoir ma fiche' : 'Remplir ma fiche', function () { aller('fiche', moi().id); }, m.fiche ? 'second' : '')),
+      // Le lien une fois parti, plus de bouton ici : un appui de trop éteindrait la page en cours. Il reste sur la fiche, en deux temps.
+      etape(2, 'Ton lien, à ton adresse personnelle', m.lien, phraseLien, m.fiche && !m.lien ? envoyerMonLien : null),
+      etape(3, 'Les heures de la section', m.heures,
+        pret ? 'Indique les heures que la section a reçues, compteur par compteur. Sans elles, aucune demande ne trouve d\'heures.' : 'Fais d\'abord les étapes 1 et 2.',
+        pret ? bouton(m.heures ? 'Revoir les heures' : 'Indiquer les heures reçues', function () { aller('heures'); }, m.heures ? 'second' : '') : null),
+      routeFinie() ? el('p', { classe: 'encadre reussite', texte: 'L\'outil est en route. Tu reçois un mail les jours où une demande attend ta saisie.' }) : null,
+      routeFinie() ? el('h2', { texte: 'Et ensuite' }) : null,
+      routeFinie() ? el('p', { texte: 'Ajoute chaque adhérent·e qui demandera des heures, puis envoie-lui son lien. ' +
+        (m.personnes ? pluriel(m.personnes, 'personne ajoutée', 'personnes ajoutées') + ', ' + m.sansLien + ' sans lien.' : 'Personne pour l\'instant.') }) : null,
+      routeFinie() ? el('p', {}, [bouton('Ajouter des personnes', function () { aller('personnes'); })]) : null,
+      routeFinie() ? el('p', { texte: 'Si le bureau en a décidé, ouvre des chantiers. Sans chantier ouvert, seules les visites de sites se demandent. ' +
+        pluriel(m.chantiers, 'chantier ouvert', 'chantiers ouverts') + '.' }) : null,
+      routeFinie() ? el('p', {}, [bouton('Voir les chantiers', function () { aller('chantiers'); }, 'second')]) : null,
+      pret ? el('p', {}, [bouton('Aller à « Gérer la section »', function () { aller('gestion'); }, 'second'), bouton('Aller à mon espace', function () { vueEspace(''); }, 'second')]) : null
+    ]);
+  };
+
+  /** Après l'envoi de son propre lien : la page courante est morte, on le dit au lieu de recharger. */
+  function vueFinLien(adresse) {
+    page('Ton lien est parti', [
+      el('p', { classe: 'encadre reussite', texte: 'Ton nouveau lien part à ' + adresse + '.' }),
+      el('p', { texte: 'Cette page ne marche plus : c\'est normal, l\'ancien lien vient de s\'éteindre.' }),
+      el('p', { texte: 'Ouvre ta boîte, ouvre le mail « [Heures 77] Ton lien personnel » et continue depuis ce lien. Tu peux fermer cette page.' }),
+      el('p', { classe: 'aide', texte: 'Si le mail n\'arrive pas dans les minutes qui viennent, regarde dans les indésirables.' })
+    ]);
+  }
+
+  // --- sommaire
+  ECRANS.gestion = function (message) {
+    var t = G.tableau, m = t.miseEnRoute;
+    var jour = t.aSaisir.length + t.aRestituer.length + t.contestations.length;
+    var attend = [];
+    if (t.aSaisir.length) attend.push(pluriel(t.aSaisir.length, 'cession à saisir', 'cessions à saisir'));
+    if (t.aRestituer.length) attend.push(pluriel(t.aRestituer.length, 'restitution', 'restitutions'));
+    if (t.contestations.length) attend.push(pluriel(t.contestations.length, 'décision du bureau à noter', 'décisions du bureau à noter'));
+    var entree = function (libelle, cible, principal) { return el('p', {}, [bouton(libelle, function () { aller(cible); }, principal ? '' : 'second')]); };
+    page('Gérer la section', [
+      navigation(false), annonce(message),
+      el('p', { classe: attend.length ? 'encadre' : 'encadre info', texte: attend.length ? 'Ce qui t\'attend : ' + attend.join(', ') + '.' : 'Rien ne t\'attend aujourd\'hui.' }),
+      routeFinie() ? null : el('p', {}, [bouton('Reprendre la mise en route', function () { aller('route'); })]),
+      entree('Le travail du jour (' + jour + ')', 'travail', jour > 0),
+      entree('Personnes et liens (' + (m.sansLien ? m.sansLien + ' sans lien' : pluriel(m.personnes + 1, 'personne', 'personnes')) + ')', 'personnes'),
+      entree('Heures de la section', 'heures'),
+      entree('Chantiers (' + pluriel(m.chantiers, 'ouvert', 'ouverts') + ')', 'chantiers'),
+      entree('Réglages', 'reglages'),
+      el('p', { classe: 'aide', texte: 'Chaque geste fait ici est inscrit au journal et visible du bureau. Aucun champ ne permet de commenter une personne.' })
+    ]);
+  };
+
+  // --- travail du jour
+  ECRANS.travail = function (message) {
+    var t = G.tableau;
+    var retour = el('div');
+    // La clé se tire au dessin du bouton, pas au clic : deux appuis portent la même. args : un tableau, ou une
+    // fonction qui le donne au moment du clic (motif choisi dans une liste).
+    var fait = function (nom, args, texte, textes) {
+      var cle = cleUnique();
+      return function (b) {
+        var valeurs = typeof args === 'function' ? args() : args;
+        appel(nom, [JETON].concat(valeurs).concat([cle]), suiteGeste('travail', null, texte, retour, textes), b);
+      };
+    };
+    // Une demande éteinte à qui le bureau donne raison repart en confirmation : on le dit au secrétaire.
+    var decider = function (c, decision) {
+      return fait('api_decider', [c.demande, decision],
+        function (r) { return r.aConfirmer ? 'Décision notée. La personne reçoit un nouveau lien pour confirmer sa demande.' : c.demande + ' : décision notée.'; },
+        { rien_a_contester: 'Il n\'y a plus rien à trancher sur cette demande.' });
+    };
+    var liste = function (motifs) { return Object.keys(motifs).map(function (k) { return option(k, motifs[k]); }); };
+    // Une carte, deux lignes : qui et quand, puis quoi.
+    var depuis = function (l) {
+      if (l.nature === 'cession') return l.jours ? 'confirmée il y a ' + pluriel(l.jours, 'jour', 'jours') : 'confirmée aujourd\'hui';
+      return l.jours ? 'en attente depuis ' + pluriel(l.jours, 'jour', 'jours') : 'en attente depuis aujourd\'hui';
+    };
+    var decrire = function (l) {
+      return [el('p', { classe: 'num', texte: l.personne + ', le ' + l.date }),
+        el('p', { texte: heures(l.heures) + ' sur « ' + l.compteur + ' ». ' + l.libelle + '. Demande ' + l.demande + ', ' + depuis(l) + '.' })];
+    };
+
+    var aSaisir = t.aSaisir.map(function (l) {
+      var blocs = decrire(l).concat([deuxTemps('J\'ai saisi chez l\'employeur', fait('api_saisir', [l.demande, l.nature], l.demande + ' : saisie notée.'),
+        { classe: '', nom: 'J\'ai saisi chez l\'employeur, demande ' + l.demande })]);
+      if (l.nature === 'cession') {
+        var motif = el('select', { 'aria-label': 'Motif de refus pour ' + l.demande }, [option('', 'Choisis un motif')].concat(liste(t.motifsRefus)));
+        blocs.push(el('details', {}, [el('summary', { texte: 'Refuser cette demande' }),
+          el('div', { classe: 'ligne' }, [motif, deuxTemps('Refuser la demande', fait('api_refuser', function () { return [l.demande, motif.value]; }, l.demande + ' : refus noté, visible du bureau.'),
+            { nom: 'Refuser la demande ' + l.demande })])]));
+      }
+      return el('div', { classe: 'carte' }, blocs);
+    });
+    var aRestituer = t.aRestituer.map(function (l) {
+      return el('div', { classe: 'carte' }, decrire(l).concat([
+        deuxTemps('J\'ai rendu les heures chez l\'employeur', fait('api_saisir', [l.demande, 'restitution'], l.demande + ' : heures rendues, c\'est noté.'),
+          { classe: '', nom: 'J\'ai rendu les heures chez l\'employeur, demande ' + l.demande }),
+        deuxTemps('Rien à rendre : l\'absence était déjà posée', fait('api_saisir', [l.demande, 'absence_deja_posee'], l.demande + ' : heures consommées, c\'est noté.'),
+          { nom: 'Rien à rendre : l\'absence était déjà posée, demande ' + l.demande })]));
+    });
+    var derogations = t.derogeables.map(function (d) {
+      var motif = el('select', { 'aria-label': 'Motif pour ' + d.demande }, [option('', 'Choisis un motif')].concat(liste(t.motifsDerogation)));
+      return el('div', { classe: 'carte' }, [el('p', { classe: 'num', texte: d.personne }),
+        el('p', { texte: 'Demande ' + d.demande + ' : ' + (d.code === 'R1' ? 'arrivée trop tard.' : 'pas confirmée à temps.') }),
+        el('div', { classe: 'ligne' }, [motif, deuxTemps('Lever ce refus',
+          fait('api_deroger', function () { return [d.demande, d.code, motif.value]; }, function (r) { return d.demande + ' : refus levé, le bureau reçoit un mail.' + (r.avertissementEmployeur ? ' Le délai de l\'employeur est dépassé : il peut refuser l\'absence.' : ''); }),
+          { nom: 'Lever ce refus, demande ' + d.demande })])]);
+    });
+    var decisions = t.contestations.map(function (c) {
+      return el('div', { classe: 'carte' }, [el('p', { classe: 'num', texte: c.personne }),
+        el('p', { texte: 'Demande ' + c.demande + ' : conteste ' + (c.objet === 'refus' ? 'un refus.' : 'un état.') }),
+        deuxTemps('Le bureau donne raison à la personne', decider(c, 'accueil'), { nom: 'Le bureau donne raison à la personne, demande ' + c.demande }),
+        deuxTemps('Le bureau maintient la décision', decider(c, 'maintien'), { nom: 'Le bureau maintient la décision, demande ' + c.demande })]);
+    });
+    var rien = !aSaisir.length && !aRestituer.length && !decisions.length;
+    var bloc = function (cartes, titre, texte) { return cartes.length ? [el('h2', { texte: titre }), texte ? el('p', { classe: 'aide', texte: texte }) : null, el('div', {}, cartes)] : []; };
+    page('Le travail du jour', [navigation(true), annonce(message), retour,
+      rien ? el('p', { classe: 'encadre info', texte: 'Rien à traiter aujourd\'hui.' }) : null
+    ].concat(
+      bloc(aSaisir, 'À saisir chez l\'employeur'),
+      bloc(aRestituer, 'Heures à rendre', 'Une activité annulée ou qui n\'a pas eu lieu : les heures reviennent à la section si l\'absence n\'a pas été posée.'),
+      bloc(decisions, 'Décisions du bureau à noter', 'Le bureau décide en réunion. Ici, tu notes seulement ce qu\'il a décidé.'),
+      bloc(derogations, 'Refus que tu peux lever', 'Deux refus seulement : la demande arrivée trop tard, et la demande pas confirmée à temps. Réserve ce geste aux circonstances exceptionnelles. Le bureau reçoit un mail à chaque fois.')
+    ));
+  };
+
+  // --- personnes : liste compacte, puis une fiche à la fois
+  ECRANS.personnes = function (message) {
+    var liste = G.personnes.personnes;
+    var sansLien = liste.filter(function (p) { return p.actif && !p.lien; }).length;
+    var actives = liste.filter(function (p) { return p.actif; });
+    var desactivees = liste.filter(function (p) { return !p.actif; });
+    var rang = function (p) {
+      return el('div', { classe: 'ligne rang' }, [
+        el('span', { classe: 'nomrang', texte: nomDe(p) + (p.secretaire ? ' (toi)' : '') }),
+        el('span', { classe: 'aide', texte: !p.actif ? 'fiche désactivée' : p.lien ? 'lien envoyé' : 'pas encore de lien' }),
+        bouton('Ouvrir la fiche', function () { aller('fiche', p.id); }, 'second', 'Ouvrir la fiche de ' + nomDe(p))
+      ]);
+    };
+    var retour = el('div');
+    var nom = el('input', { type: 'text', id: 'p-nom', maxlength: '60', autocomplete: 'off' });
+    var prenom = el('input', { type: 'text', id: 'p-prenom', maxlength: '60', autocomplete: 'off' });
+    var mail = el('input', { type: 'email', id: 'p-mail', maxlength: '120', autocomplete: 'off', 'aria-describedby': 'aide-p-mail' });
+    var cle = cleUnique();
+    var ajouter = bouton('Ajouter et ouvrir sa fiche', function (b) {
+      appel('api_ajouterPersonne', [JETON, nom.value, prenom.value, mail.value, cle], function (r) {
+        if (!r.ok && r.erreur === 'adresse_deja_prise' && r.chez) return direAdressePrise(retour, r.chez);
+        if (!r.ok) return dire(retour, r);
+        chargerGestion(function () { aller('fiche', r.id, { genre: 'afaire', texte: 'Fiche créée. Dernière étape : envoie-lui son lien.' }); });
+      }, b);
+    });
+    page('Personnes et liens', [
+      navigation(true), annonce(message),
+      el('p', { classe: sansLien ? 'encadre' : 'encadre info', texte: sansLien ? pluriel(sansLien, 'personne n\'a pas encore reçu son lien', 'personnes n\'ont pas encore reçu leur lien') + '. Tant qu\'elle ne l\'a pas, une personne ne peut rien demander.' : 'Tout le monde a son lien.' }),
+      el('h2', { texte: 'Les personnes' }),
+      el('div', {}, actives.map(rang)),
+      // Les fiches désactivées passent en bas, repliées : elles ne gênent plus la lecture de la liste.
+      desactivees.length ? el('details', {}, [el('summary', { texte: 'Fiches désactivées (' + desactivees.length + ')' }), el('div', {}, desactivees.map(rang))]) : null,
+      el('h2', { texte: 'Ajouter un·e adhérent·e' }),
+      el('p', { classe: 'aide', texte: 'Pour une personne qui n\'est pas dans la liste ci-dessus. Ta propre fiche y est déjà : ne t\'ajoute pas ici.' }),
+      retour,
+      el('label', { for: 'p-nom', texte: 'Nom' }), nom,
+      el('label', { for: 'p-prenom', texte: 'Prénom' }), prenom,
+      el('label', { for: 'p-mail', texte: 'Adresse de messagerie personnelle' }),
+      aide('aide-p-mail', 'Pas d\'adresse France Travail ni Pôle emploi : elle serait refusée.'), mail, ajouter
+    ]);
+  };
+
+  ECRANS.fiche = function (message, id) {
+    var p = G.personnes.personnes.filter(function (x) { return x.id === id; })[0];
+    if (!p) return aller('personnes');
+    var aRemplir = p.nom === 'À renseigner';
+    var qui = p.secretaire ? 'Ta fiche' : nomDe(p);
+    var retour = el('div');
+    var champ = function (suffixe, libelle, type, valeur, texteAide) {
+      var saisie = el('input', { type: type, id: 'f-' + suffixe, value: valeur, maxlength: type === 'email' ? '120' : '60', autocomplete: 'off', 'aria-describedby': texteAide ? 'aide-f-' + suffixe : null });
+      return { saisie: saisie, bloc: [el('label', { for: 'f-' + suffixe, texte: libelle }), texteAide ? aide('aide-f-' + suffixe, texteAide) : null, saisie] };
+    };
+    var nom = champ('nom', 'Nom', 'text', aRemplir ? '' : p.nom);
+    var prenom = champ('prenom', 'Prénom', 'text', aRemplir ? '' : p.prenom);
+    var mail = champ('mail', 'Adresse de messagerie personnelle', 'email', p.mail, 'C\'est là que partent le lien et tous les messages de l\'outil. Pas d\'adresse France Travail.');
+    var depuis = champ('depuis', 'Date du changement', 'date', '', 'Laisse vide pour aujourd\'hui.');
+    var statut = function (nature, valeur, libelle) {
+      return deuxTemps(libelle, function (b) {
+        appel('api_definirStatut', [JETON, p.id, nature, valeur, dateFr(depuis.saisie.value)], suiteGeste('fiche', id, function (r) { return 'C\'est noté, à compter du ' + r.depuis + '.'; }, retour), b);
+      });
+    };
+    var sauver = function (b) {
+      appel('api_modifierPersonne', [JETON, p.id, { nom: nom.saisie.value, prenom: prenom.saisie.value, mail: mail.saisie.value }], function (r) {
+        if (!r.ok && r.erreur === 'adresse_deja_prise' && r.chez) {
+          // L'adresse est sur une autre fiche : on la nomme, et on donne la sortie.
+          // Un doublon qui n'a jamais servi se supprime ; un doublon qui a une histoire se désactive.
+          var cleDoublon = cleUnique();
+          return direAdressePrise(retour, r.chez, !p.secretaire ? null : r.chez.supprimable ? [
+            el('p', { texte: 'Si c\'est toi, en double : supprime cette autre fiche. Elle n\'a jamais servi. Son lien s\'éteint et le geste reste au journal.' }),
+            bouton('Supprimer le doublon et enregistrer ma fiche', function (b2) {
+              appel('api_supprimerPersonne', [JETON, r.chez.id, cleDoublon], function (d) { if (!d.ok) return dire(retour, d); sauver(b2); }, b2);
+            })
+          ] : [
+            el('p', { texte: 'Si c\'est toi, en double : désactive cette autre fiche. Elle reste au journal, rien n\'est effacé, et son lien s\'éteint.' }),
+            bouton('Désactiver le doublon et enregistrer ma fiche', function (b2) {
+              appel('api_modifierPersonne', [JETON, r.chez.id, { actif: false }], function (d) { if (!d.ok) return dire(retour, d); sauver(b2); }, b2);
+            })
+          ]);
+        }
+        if (!r.ok) return dire(retour, r);
+        chargerGestion(function () {
+          // Le serveur vient de dire où en est la mise en route : on y retourne tant qu'elle n'est pas finie.
+          var versRoute = p.secretaire && !routeFinie();
+          if (p.secretaire) return aller(versRoute ? 'route' : 'fiche', id, 'Ta fiche est enregistrée.' + (versRoute ? ' Étape suivante : t\'envoyer ton lien.' : ''));
+          aller('fiche', id, r.lienCoupe ? { genre: 'afaire', texte: 'Adresse changée. L\'ancien lien est coupé : envoie-lui un nouveau lien.' } : 'Fiche enregistrée.');
+        });
+      }, b);
+    };
+    var enregistrer = bouton('Enregistrer la fiche', sauver);
+    var blocLien;
+    if (p.secretaire) {
+      blocLien = [el('p', { texte: 'Ton lien part à l\'adresse ci-dessus. Ton lien actuel cessera de marcher. Tu continueras depuis le nouveau mail.' }),
+        aRemplir ? el('p', { classe: 'aide', texte: 'Enregistre d\'abord ta fiche.' }) : deuxTemps('M\'envoyer mon lien à cette adresse', function (b) {
+          appel('api_gererLien', [JETON, p.id, 'envoyer'], function (r) { if (r.ok) return vueFinLien(p.mail); dire(retour, r); }, b);
+        })];
+    } else {
+      blocLien = [el('p', { texte: p.lien ? 'Cette personne a reçu son lien.' : 'Pas encore de lien. Tant qu\'elle ne l\'a pas reçu, elle ne peut rien demander.' }),
+        el('p', { classe: 'aide', texte: 'Le lien part à l\'adresse de la fiche. S\'il y en avait déjà un, il cesse de marcher.' }),
+        bouton(p.lien ? 'Envoyer un nouveau lien' : 'Envoyer son lien', function (b) {
+          appel('api_gererLien', [JETON, p.id, 'envoyer'], suiteGeste('fiche', id, 'Lien envoyé à ' + p.mail + '.', retour), b);
+        }, p.lien ? 'second' : 'envoi'),
+        p.lien ? deuxTemps('Couper son lien', function (b) { appel('api_gererLien', [JETON, p.id, 'revoquer'], suiteGeste('fiche', id, 'Lien coupé.', retour), b); }) : null];
+    }
+    var versRoute = p.secretaire && !routeFinie();
+    // La clé se tire au dessin : deux appuis portent la même, la suppression ne se joue qu'une fois.
+    var cleSuppression = cleUnique();
+    page(qui, [
+      el('p', {}, [bouton(versRoute ? 'Revenir à la mise en route' : 'Revenir à la liste des personnes', function () { aller(versRoute ? 'route' : 'personnes'); }, 'second')]),
+      annonce(message), retour,
+      p.actif ? null : el('p', { classe: 'encadre info', texte: 'Fiche désactivée : cette personne ne peut plus ouvrir l\'outil.' }),
+      el('h2', { texte: '1. Identité et adresse' })
+    ].concat(nom.bloc, prenom.bloc, mail.bloc, [enregistrer, el('h2', { texte: '2. Lien personnel' })], blocLien, [
+      el('h2', { texte: '3. Mandat et bureau' }),
+      el('p', { texte: 'Titulaire d\'un mandat : ' + (p.mandate ? 'oui' : 'non') + '. Membre du bureau : ' + (p.bureau ? 'oui' : 'non') + '.' }),
+      el('p', { classe: 'aide', texte: 'Un mandat ouvre les compteurs réservés et le délai de 24 heures. Le bureau ouvre le « Suivi pour le bureau ».' })
+    ], depuis.bloc, [
+      p.mandate ? statut('mandat', false, 'Mettre fin au mandat') : statut('mandat', true, 'Déclarer titulaire d\'un mandat'),
+      p.bureau ? statut('bureau', false, 'Faire sortir du bureau') : statut('bureau', true, 'Faire entrer au bureau'),
+      p.secretaire ? null : el('h2', { texte: '4. Désactiver' }),
+      p.secretaire ? null : deuxTemps(p.actif ? 'Désactiver la fiche' : 'Réactiver la fiche', function (b) {
+        appel('api_modifierPersonne', [JETON, p.id, { actif: !p.actif }], suiteGeste('fiche', id, p.actif ? 'Fiche désactivée, lien coupé.' : 'Fiche réactivée.', retour), b);
+      }),
+      p.secretaire ? null : el('p', { classe: 'aide', texte: 'Pour une fiche créée par erreur. Possible seulement si la personne n\'a jamais utilisé l\'outil.' }),
+      p.secretaire ? null : deuxTemps('Supprimer cette fiche', function (b) {
+        appel('api_supprimerPersonne', [JETON, p.id, cleSuppression], suiteGeste('personnes', null, 'Fiche supprimée.', retour), b);
+      }, { nom: 'Supprimer la fiche de ' + nomDe(p) })
+    ]));
+  };
+
+  // --- heures de la section
+  ECRANS.heures = function (message) {
+    var t = G.tableau;
+    var retour = el('div');
+    var compteur = el('select', { id: 'h-compteur' }, t.compteurs.map(function (c) { return option(c.code, c.libelle); }));
+    var nb = el('input', { type: 'text', id: 'h-heures', inputmode: 'decimal', autocomplete: 'off' });
+    var origine = el('input', { type: 'text', id: 'h-origine', maxlength: '80', autocomplete: 'off' });
+    // Les premières heures ferment la mise en route : on revient la clore, avec la suite proposée.
+    var enRoute = !routeFinie();
+    // Clé tirée au dessin de l'écran : deux appuis sur « Ajouter ces heures » n'ajoutent qu'une fois.
+    var cle = cleUnique();
+    var ajouter = bouton('Ajouter ces heures', function (b) {
+      appel('api_doter', [JETON, compteur.value, nb.value, origine.value, cle], function (r) {
+        if (!r.ok) return dire(retour, r);
+        chargerGestion(function () {
+          if (enRoute && routeFinie()) return aller('route', null, 'Heures ajoutées. La mise en route est finie.');
+          aller('heures', null, 'Heures ajoutées.');
+        });
+      }, b);
+    });
+    page('Heures de la section', [
+      navigation(true), annonce(message), retour,
+      tableau(COLONNES_COMPTEURS, t.compteurs, 'Heures de la section'), el('p', { classe: 'aide', texte: AIDE_COMPTEURS }),
+      el('h2', { texte: 'Ajouter des heures reçues' }),
+      el('p', { classe: 'aide', texte: 'Une ligne chaque fois que la section reçoit des heures, compteur par compteur. Exemple : 150 heures en janvier sur « Mandats tous ».' }),
+      el('label', { for: 'h-compteur', texte: 'Compteur' }), compteur,
+      el('label', { for: 'h-heures', texte: 'Nombre d\'heures reçues' }), nb,
+      el('label', { for: 'h-origine', texte: 'D\'où viennent ces heures ? (facultatif)' }), origine, ajouter,
+      el('h2', { texte: 'Heures déjà ajoutées' }),
+      t.dotations.length ? el('div', {}, t.dotations.map(function (d) {
+        var c = t.compteurs.filter(function (x) { return x.code === d.compteur; })[0];
+        var ligne = (c ? c.libelle : d.compteur) + ', ' + heures(d.heures) + (d.origine ? ', ' + d.origine : '') + (d.date ? ', le ' + dateFr(d.date) : '');
+        var cleAnnulation = cleUnique();
+        return el('div', { classe: 'ligne rang' }, [
+          el('span', { texte: ligne }),
+          deuxTemps('Annuler cet ajout', function (b) { appel('api_annulerDotation', [JETON, d.evt_id, cleAnnulation], suiteGeste('heures', null, 'Ajout annulé. L\'annulation est au journal.', retour), b); },
+            { nom: 'Annuler cet ajout : ' + ligne })
+        ]);
+      })) : el('p', { texte: 'Aucune pour l\'instant.' })
+    ]);
+  };
+
+  // --- chantiers
+  ECRANS.chantiers = function (message) {
+    var retour = el('div');
+    var textes = { nom: 'Écris le nom du chantier.' };
+    var libelle = el('input', { type: 'text', id: 'c-libelle', maxlength: '60', autocomplete: 'off' });
+    var ouvrir = bouton('Ouvrir ce chantier', function (b) { appel('api_gererChantier', [JETON, 'ouvrir', libelle.value], suiteGeste('chantiers', null, 'Chantier ouvert.', retour, textes), b); });
+    page('Chantiers', [
+      navigation(true), annonce(message), retour,
+      el('p', { texte: 'Un chantier, c\'est un travail que le bureau a décidé : un texte, un groupe de travail. Ouvert ici, il apparaît dans la liste « Objet » des demandes.' }),
+      el('div', {}, G.personnes.chantiers.map(function (c) {
+        return el('div', { classe: 'ligne rang' }, [
+          el('span', { texte: c.libelle + ', ouvert le ' + dateFr(c.ouvert_le) + (c.clos_le ? ', fermé le ' + dateFr(c.clos_le) : '') }),
+          c.clos_le ? null : deuxTemps('Fermer ce chantier', function (b) { appel('api_gererChantier', [JETON, 'clore', c.code], suiteGeste('chantiers', null, 'Chantier fermé.', retour, textes), b); },
+            { nom: 'Fermer ce chantier : ' + c.libelle })
+        ]);
+      })),
+      el('h2', { texte: 'Ouvrir un chantier' }),
+      el('label', { for: 'c-libelle', texte: 'Nom du chantier décidé par le bureau' }), libelle, ouvrir
+    ]);
+  };
+
+  // --- réglages
+  var REGLAGES = {
+    marge_jours_ouvres: { libelle: 'Marge de la section, en jours ouvrés', court: 'Marge de la section, en jours ouvrés', exemple: 'La marge s\'écrit en jours entiers, de 0 à 10. Exemple : 2.' },
+    date_effet_regles: { libelle: 'Date d\'effet des règles (jj/mm/aaaa)', court: 'Date d\'effet des règles', exemple: 'La date s\'écrit jj/mm/aaaa. Exemple : 16/02/2027.',
+      aide: 'Effet immédiat : à partir de cette date, l\'outil oppose les refus.' },
+    seuil_part_sans_mandat: { libelle: 'Repère pour la part cédée sans mandat (0,5 pour 50 %)', court: 'Repère de la part cédée sans mandat', exemple: 'Le repère s\'écrit entre 0 et 1. Exemple : 0,5 pour 50 %.' }
+  };
+  ECRANS.reglages = function (message) {
+    var retour = el('div');
+    page('Réglages', [
+      navigation(true), annonce(message), retour,
+      el('p', { classe: 'encadre', texte: 'Ne change rien ici sans décision du bureau. Un changement prend effet sept jours plus tard, sauf la date d\'effet des règles, et le bureau reçoit un mail.' }),
+      el('div', {}, G.tableau.parametres.map(function (p) {
+        var r = REGLAGES[p.cle] || { libelle: 'Réglage' };
+        var champ = el('input', { type: 'text', id: 'r-' + p.cle, autocomplete: 'off', 'aria-describedby': r.aide ? 'aide-r-' + p.cle : null,
+          value: p.cle === 'date_effet_regles' ? dateFr(p.valeur) : String(p.valeur).replace('.', ',') });
+        return el('div', { classe: 'carte' }, [el('label', { for: 'r-' + p.cle, texte: r.libelle }), champ,
+          r.aide ? aide('aide-r-' + p.cle, r.aide) : null,
+          deuxTemps('Modifier', function (b) {
+            appel('api_modifierParametre', [JETON, p.cle, champ.value],
+              suiteGeste('reglages', null, function (x) { return 'Réglage modifié, effet le ' + x.effet + '. Le bureau reçoit un mail.'; }, retour, r.exemple ? { valeur_hors_liste: r.exemple } : null), b);
+          }, { nom: 'Modifier le réglage : ' + r.libelle })]);
+      }))
+    ]);
+  };
+
+  // ------------------------------------------------------------ boîte de test
+  function vueBoite() {
+    attente('Boîte de test');
+    appel('api_boiteTest', [CLE], function (r) {
+      if (!r.ok) return lienInvalide();
+      var retourTache = el('span');
+      var tache = bouton('Jouer la tâche quotidienne', function (b) {
+        appel('api_tacheTest', [CLE], function (t) {
+          retourTache.textContent = t.ok ? ' Extinctions : ' + t.bilan.expirations + ', liens d\'état : ' + t.bilan.liens + ', relances : ' + t.bilan.relances + ', mains passées : ' + t.bilan.transferts + '. Recharge la page pour voir les messages.' : ' Échec.';
+        }, b);
+      }, 'second');
+      page('Boîte de test', [el('p', { classe: 'encadre test', texte: 'Environnement de TEST : les derniers messages partis, du plus récent au plus ancien. Cette page n\'existe pas en production.' }), el('p', {}, [tache, retourTache])]
+        .concat(r.messages.map(function (m) {
+          // Le corps du mail est montré tel qu'il part, sans retouche.
+          var corps = el('pre');
+          m.texte.split(/(https:\/\/\S+)/).forEach(function (bout) {
+            var noeud = /^https:\/\//.test(bout) ? el('a', { href: bout }) : null;
+            if (noeud) noeud.textContent = bout;
+            corps.appendChild(noeud || document.createTextNode(bout));
+          });
+          return el('div', { classe: 'carte' }, [el('p', { classe: 'num', texte: m.destinataire + ', ' + m.type }), el('p', { texte: m.sujet }), el('p', { classe: 'aide', texte: m.ts }), corps]);
+        })));
+    });
+  }
+
+  // ------------------------------------------- page d'entrée hors Google
+  /** Jeton d'un lien collé, de l'ancienne forme (« /exec?j= », « ?a= ») ou de la nouvelle (« #j= », « #a= »). null si rien n'est reconnu. */
+  function jetonDuLien(texte) {
+    var m = /[?#&]([ja])=([A-Za-z0-9.-]{20,})/.exec(String(texte || ''));
+    return m ? { parametre: m[1], valeur: m[2] } : null;
+  }
+  /** Ouverte sans rien après le « # » : on colle le lien du mail, la page l'ouvre ici. */
+  function vueEntree() {
+    var champ = el('input', { type: 'text', id: 'lien-colle', autocomplete: 'off', spellcheck: 'false', 'aria-describedby': 'aide-lien-colle' });
+    var retour = el('div');
+    var ouvrir = function () {
+      var lu = jetonDuLien(champ.value);
+      if (!lu) {
+        vider(retour).appendChild(erreur('Ce lien n\'est pas reconnu. Copie-le en entier depuis le mail.'));
+        return;
+      }
+      // Le jeton passe après le « # » : le changement d'adresse recharge la page sur la bonne vue.
+      location.hash = lu.parametre + '=' + lu.valeur;
+    };
+    champ.addEventListener('keydown', function (ev) { if (ev && ev.key === 'Enter') ouvrir(); });
+    page('Ouvre ton espace', [
+      el('p', { texte: 'Ton lien est dans le mail « [Heures 77] Ton lien personnel », ou dans un mail de confirmation.' }),
+      el('label', { for: 'lien-colle', texte: 'Colle ici le lien reçu par mail' }),
+      aide('aide-lien-colle', 'Si Google affiche « Impossible d\'ouvrir le fichier », copie le lien du mail et colle-le ici.'),
+      champ, bouton('Ouvrir', function () { ouvrir(); }, 'envoi'), retour
+    ], true);
+  }
+
+  ({ accueil: vueAccueil, perdu: vuePerdu, action: vueAction, espace: function () { vueEspace(''); }, boite: vueBoite, entree: vueEntree }[VUE] || vueAccueil)();
+})();
+</script>
+</body>
+</html>
