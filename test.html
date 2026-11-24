@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="referrer" content="no-referrer">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-PWuZcpeebAr9wo8sL0PsSFystiTqAmnt3zSzEDFV66Y='; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src data:; connect-src https://script.google.com https://script.googleusercontent.com; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-oNCldxwZ5Cm8gMortpB2/C6dkI/kciu0bj4Yo64YlTE='; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src data:; connect-src https://script.google.com https://script.googleusercontent.com; base-uri 'none'; form-action 'none'">
 <title>Heures 77, TEST</title>
 <!-- Fichier produit par outils/construire-entree.js à partir de src/html/page.html. Ne pas modifier à la main. -->
 <!-- Polices de la charte. Si le chargement échoue, Georgia et Segoe UI prennent le relais : la page reste lisible.
@@ -686,14 +686,16 @@
     // La date choisie ouvre ou ferme les compteurs réservés : une phrase dit pourquoi.
     var COMPTEURS_A_LA_DATE = {
       ouverts: 'À cette date, tu auras un mandat : les compteurs réservés aux titulaires de mandat te sont ouverts.',
-      fermes: 'À cette date, ton mandat sera terminé : les compteurs réservés aux titulaires de mandat ne te sont pas ouverts.'
+      fermes: 'À cette date, ton mandat sera terminé : les compteurs réservés aux titulaires de mandat ne te sont pas ouverts.',
+      pasEncore: 'À cette date, tu n\'auras pas de mandat.'
     };
     var aideCompteurDate = el('p', { id: 'aide-compteur-date' });
+    var aideSansMandat = fermes ? el('p', { id: 'aide-compteur-sans-mandat', texte: 'Tu vois les quatre compteurs. Sans mandat, tu ne peux demander que sur les compteurs « tous ».' }) : null;
     aideCompteurDate.hidden = true;
     var aideCompteur = el('div', { classe: 'aide', id: 'aide-compteur' }, [
       el('p', { texte: unSeul ? 'Un seul compteur t\'est ouvert : il est déjà choisi.' : 'La réserve d\'heures où la section prend les tiennes.' }),
       expliques.length ? el('ul', {}, expliques.map(function (c) { return el('li', { texte: '« ' + c.libelle + ' » : ' + AIDES_COMPTEURS[c.code] + '.' }); })) : null,
-      fermes ? el('p', { texte: 'Tu vois les quatre compteurs. Sans mandat, tu ne peux demander que sur les compteurs « tous ».' }) : null,
+      aideSansMandat,
       aideCompteurDate
     ]);
     /** Ouvre ou ferme les compteurs réservés selon le mandat à la date choisie. Rend la phrase affichée, ou ''. */
@@ -710,7 +712,10 @@
           if (compteur.value === o.c.code) compteur.value = unSeul ? ouverts[0].code : '';
         }
       });
-      var phrase = !e.mandate && ouvre ? COMPTEURS_A_LA_DATE.ouverts : e.mandate && !ouvre ? COMPTEURS_A_LA_DATE.fermes : '';
+      var phrase = !e.mandate && ouvre ? COMPTEURS_A_LA_DATE.ouverts : e.mandate && !ouvre ? COMPTEURS_A_LA_DATE.fermes
+        : !e.mandate && debutMandat && date.value ? COMPTEURS_A_LA_DATE.pasEncore : '';
+      // « Sans mandat… » ne vaut que pour une date sans mandat : elle s'efface quand la date en a un.
+      if (aideSansMandat) aideSansMandat.hidden = !e.mandate && ouvre;
       aideCompteurDate.textContent = typo(phrase);
       aideCompteurDate.hidden = !phrase;
       return phrase;
@@ -942,7 +947,7 @@
           bouton('Gérer la section', function () { ouvrirGestion(reste ? 'route' : 'gestion'); })
         ]) : null,
         e.roles.bureau ? el('p', {}, [bouton('Suivi pour le bureau', vueBureau, 'second')]) : null,
-        e.essai ? el('p', { classe: 'encadre info', texte: 'Période d\'essai jusqu\'au ' + e.dateEffet + ' : l\'outil calcule les refus et les affiche, sans en opposer aucun.' }) : null
+        e.essai ? el('p', { classe: 'encadre info', texte: 'Période d\'essai jusqu\'au ' + e.dateEffet + ' : l\'outil calcule les refus prévus par la règle soumise au vote et les affiche, sans les opposer.' }) : null
       ].concat(demandes, nouvelle, [
         el('div', { classe: 'suite' }, [
           el('details', {}, [el('summary', { texte: 'Tes données' }), el('p', { texte: e.mention }), voir, sortie]),
