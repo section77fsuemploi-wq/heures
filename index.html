@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="referrer" content="no-referrer">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-LtZSB6RQLH2rIMBkcmjapnBP5q4me9oUNY/zh5dJuW4='; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src data:; connect-src https://script.google.com https://script.googleusercontent.com; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-eIH9OwJL4x0RbNY0VWSWV4d333l0onEkp/hmhchLzfk='; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src data:; connect-src https://script.google.com https://script.googleusercontent.com; base-uri 'none'; form-action 'none'">
 <title>Heures 77</title>
 <!-- Fichier produit par outils/construire-entree.js à partir de src/html/page.html. Ne pas modifier à la main. -->
 <!-- Polices de la charte. Si le chargement échoue, Georgia et Segoe UI prennent le relais : la page reste lisible.
@@ -147,7 +147,7 @@
 // Tout ce que la page doit savoir se lit après le « # » : cette partie de l'adresse ne part jamais vers l'hébergeur.
 (function () {
   'use strict';
-  var EXEC = "https://script.google.com/macros/s/AKfycbxrMezLrxAHMrG_GU1Osa-tLshxGHBr7xdxBqcNxZe9l6isF4a5SeFSM45ggbDYu5RzUg/exec", VERSION = "0.8.0", TEST = false;
+  var EXEC = "https://script.google.com/macros/s/AKfycbxrMezLrxAHMrG_GU1Osa-tLshxGHBr7xdxBqcNxZe9l6isF4a5SeFSM45ggbDYu5RzUg/exec", VERSION = "0.9.0", TEST = false;
   var app = document.getElementById('app');
   function lire(texte) {
     var lu = Object.create(null);
@@ -378,7 +378,8 @@
     personne_inactive: 'Cette fiche est désactivée.', aucun_lien: 'Cette personne n\'a pas de lien en ce moment.',
     secretaire: 'Ce geste n\'est pas possible sur la fiche du secrétaire.', date: 'Date non valable.', chantier: 'Chantier introuvable ou déjà fermé.',
     fiche_deja_utilisee: 'Cette personne a déjà utilisé l\'outil. Sa fiche se désactive, elle ne se supprime pas.',
-    correction: 'Cet ajout d\'heures ne peut pas être annulé.', parametre: 'Réglage non modifiable.', inchange: 'La valeur est déjà celle-là.', nature: 'Geste inconnu.'
+    correction: 'Cette ligne ne peut pas être annulée.',
+    restitution_a_annuler: 'Des heures de ce compteur ont été rendues à la région. Annule d\'abord la restitution, plus bas, puis cet ajout.', parametre: 'Réglage non modifiable.', inchange: 'La valeur est déjà celle-là.', nature: 'Geste inconnu.'
   };
   /** Le motif d'abord, en clair ; le code et l'alinéa à la fin, pour qui veut vérifier. */
   function phraseRefus(r) { return r.libelle + ' (' + (r.manuel ? 'alinéa ' + r.alinea : r.code + ', alinéa ' + r.alinea) + ')'; }
@@ -457,10 +458,10 @@
     ])]);
   }
   var COLONNES_COMPTEURS = [
-    { titre: 'Compteur', cle: 'libelle', type: 'nom' }, { titre: 'Reçu', cle: 'dotation', type: 'nombre' }, { titre: 'Engagé', cle: 'engage', type: 'nombre' },
+    { titre: 'Compteur', cle: 'libelle', type: 'nom' }, { titre: 'Reçu', cle: 'dotation', type: 'nombre' }, { titre: 'Rendu à la région', cle: 'rendu', type: 'nombre' }, { titre: 'Engagé', cle: 'engage', type: 'nombre' },
     { titre: 'Cédé', cle: 'cede', type: 'nombre' }, { titre: 'Restitué', cle: 'restitue', type: 'nombre' }, { titre: 'Solde', cle: 'solde', type: 'nombre' }
   ];
-  var AIDE_COMPTEURS = 'Reçu : les heures versées à la section. Engagé : demandé et confirmé. Cédé : saisi chez l\'employeur. Restitué : rendu à la section. Solde : ce qui reste à demander.';
+  var AIDE_COMPTEURS = 'Reçu : les heures versées à la section. Rendu à la région : les heures que la section lui a rendues. Engagé : demandé et confirmé. Cédé : saisi chez l\'employeur. Restitué : rendu à la section par une personne. Solde : ce qui reste à demander.';
   /** Ce qu'est chaque compteur, dit à la personne qui remplit le formulaire. */
   var AIDES_COMPTEURS = {
     MT: 'le temps de l\'activité elle-même (visite, réunion, travail sur un texte)',
@@ -790,7 +791,7 @@
   var GESTES = {
     SAISIE_CESSION: 'Cession saisie', SAISIE_MODIF_DATE: 'Changement de date saisi', SAISIE_RESTITUTION: 'Heures rendues',
     ABSENCE_DEJA_POSEE: 'Rien à rendre, absence déjà posée', REFUS_MANUEL: 'Refus', DEROGATION: 'Dérogation',
-    DECISION_CONTESTATION: 'Décision du bureau notée', DOTATION: 'Heures reçues ajoutées', CORRECTION: 'Ajout d\'heures annulé',
+    DECISION_CONTESTATION: 'Décision du bureau notée', DOTATION: 'Heures reçues ajoutées', RESTITUTION_REGION: 'Heures rendues à la région', CORRECTION: 'Ajout d\'heures annulé',
     PARAM_MODIF: 'Réglage changé', STATUT_MANDAT: 'Mandat changé', ROLE_BUREAU: 'Composition du bureau changée',
     CHANTIER_OUVERT: 'Chantier ouvert', CHANTIER_CLOS: 'Chantier fermé', LIEN_REVOQUE: 'Lien coupé',
     PERSONNE_AJOUTEE: 'Fiche créée', PERSONNE_MODIFIEE: 'Fiche corrigée', PERSONNE_SUPPRIMEE: 'Fiche supprimée', EXPORT_LISTE: 'Liste exportée'
@@ -803,7 +804,11 @@
     return cle === 'date_effet_regles' ? dateFr(v) : String(v).replace('.', ',');
   }
   /** Ce que la colonne « Motif » dit d'un geste : pour un réglage, lequel et ses valeurs ; pour une dérogation, le motif choisi et le refus levé. */
-  function motifGeste(a) {
+  function motifGeste(a, compteurs) {
+    if (a.type === 'RESTITUTION_REGION' && typeof a.heures === 'number') {
+      var c = (compteurs || []).filter(function (x) { return x.code === a.compteur; })[0];
+      return heures(a.heures) + ', ' + (c ? c.libelle : a.compteur);
+    }
     if (a.type === 'PARAM_MODIF' && a.parametre) {
       return (REGLAGES[a.parametre] ? REGLAGES[a.parametre].court : a.parametre) + ' : de ' + valeurReglage(a.parametre, a.avant) + ' à ' + valeurReglage(a.parametre, a.apres);
     }
@@ -814,6 +819,15 @@
     }
     return MOTIFS_GESTES[a.motif] || a.motif;
   }
+  var ANNULATIONS = {
+    DOTATION: 'Ajout d\'heures annulé', RESTITUTION_REGION: 'Restitution à la région annulée', STATUT_MANDAT: 'Changement de mandat annulé',
+    ROLE_BUREAU: 'Changement du bureau annulé', CHANTIER_OUVERT: 'Ouverture de chantier annulée', CHANTIER_CLOS: 'Fermeture de chantier annulée'
+  };
+  /** Une annulation dit ce qu'elle annule quand le serveur le sait. */
+  function libelleGeste(a) {
+    if (a.type === 'CORRECTION' && ANNULATIONS[a.cible]) return ANNULATIONS[a.cible];
+    return GESTES[a.type] || a.type;
+  }
   function retourEspace() { return el('p', {}, [bouton('Revenir à mon espace', function () { vueEspace(''); }, 'second')]); }
 
   function vueBureau() {
@@ -823,7 +837,7 @@
       var v = r.vue;
       regle = v.versionRegle;
       var part = v.partSansMandat;
-      var gestes = v.actionsAdmin.map(function (a) { return { date: dateFr(a.date), geste: GESTES[a.type] || a.type, demande: a.demande, motif: motifGeste(a) }; });
+      var gestes = v.actionsAdmin.map(function (a) { return { date: dateFr(a.date), geste: libelleGeste(a), demande: a.demande, motif: motifGeste(a, v.compteurs) }; });
       var visites = v.visites.map(function (x) { return { date: x.date, site: x.site, equipe: x.equipe, etat: ETATS_VISITE[x.etat] || (x.faite ? 'faite' : '') }; });
       var temoins = v.temoins || [];
       page('Suivi pour le bureau', [
@@ -834,7 +848,7 @@
         el('h2', { texte: 'Heures de la section' }),
         tableau(COLONNES_COMPTEURS.concat([{ titre: 'Solde au 31/12, au rythme actuel', cle: 'projection', type: 'nombre' }]), v.compteurs, 'Heures de la section'),
         el('p', { classe: 'aide', texte: AIDE_COMPTEURS }),
-        el('p', { texte: 'Déplacements : ' + heures(v.deplacement.engage) + ' engagées sur ' + heures(v.deplacement.dotation) + ' reçues.' }),
+        el('p', { texte: 'Déplacements : ' + heures(v.deplacement.engage) + ' engagées sur ' + heures(v.deplacement.dotation) + ' reçues' + (v.deplacement.rendu ? ', dont ' + heures(v.deplacement.rendu) + ' rendues à la région.' : '.') }),
         el('p', { texte: 'Part cédée à des personnes sans mandat : ' + pourcent(part.part, part.seuil) + ' % (' + heures(part.sansMandat) + ' sur ' + heures(part.total) + '). Repère de la section : ' + Math.round(part.seuil * 100) + ' %' + (part.alerte ? ', dépassé.' : '.') + ' Le plafond de l\'accord s\'apprécie au niveau de l\'établissement.' }),
         el('h2', { texte: 'Par personne' }),
         el('p', { classe: 'aide', texte: 'Une ligne par personne, au même format pour tout le monde, secrétaire compris, par ordre alphabétique.' }),
@@ -1217,6 +1231,17 @@
         });
       }, b);
     });
+    // Restitution à la région : les heures rendues sortent du solde. Même garde contre le double appui.
+    var retourRendu = el('div');
+    var compteurRendu = el('select', { id: 'rg-compteur' }, t.compteurs.map(function (c) { return option(c.code, c.libelle); }));
+    var nbRendu = el('input', { type: 'text', id: 'rg-heures', inputmode: 'decimal', autocomplete: 'off' });
+    var noteRendu = el('input', { type: 'text', id: 'rg-note', maxlength: '80', autocomplete: 'off' });
+    var cleRendu = cleUnique();
+    var rendre = bouton('Rendre ces heures à la région', function (b) {
+      appel('api_rendreRegion', [JETON, compteurRendu.value, nbRendu.value, noteRendu.value, cleRendu],
+        suiteGeste('heures', null, 'Heures rendues à la région. Elles sont sorties du solde.', retourRendu, { solde_insuffisant: 'La section n\'a pas autant d\'heures disponibles sur ce compteur. Regarde la colonne « Solde ».' }), b);
+    });
+    var rendus = t.rendus || [];
     page('Heures de la section', [
       navigation(true), annonce(message), retour,
       tableau(COLONNES_COMPTEURS, t.compteurs, 'Heures de la section'), el('p', { classe: 'aide', texte: AIDE_COMPTEURS }),
@@ -1234,6 +1259,23 @@
           el('span', { texte: ligne }),
           deuxTemps('Annuler cet ajout', function (b) { appel('api_annulerDotation', [JETON, d.evt_id, cleAnnulation], suiteGeste('heures', null, 'Ajout annulé. L\'annulation est au journal.', retour), b); },
             { nom: 'Annuler cet ajout : ' + ligne })
+        ]);
+      })) : el('p', { texte: 'Aucune pour l\'instant.' }),
+      el('h2', { texte: 'Restitution à la région' }),
+      el('p', { classe: 'aide', texte: 'Quand la section rend des heures à la région, note-le ici : elles sortent du solde du compteur. L\'outil ne prévient pas la région, c\'est toi qui le fais.' }),
+      retourRendu,
+      el('label', { for: 'rg-compteur', texte: 'Compteur des heures rendues' }), compteurRendu,
+      el('label', { for: 'rg-heures', texte: 'Nombre d\'heures rendues' }), nbRendu,
+      el('label', { for: 'rg-note', texte: 'Précision (facultatif)' }), noteRendu, rendre,
+      el('h2', { texte: 'Heures déjà rendues à la région' }),
+      rendus.length ? el('div', {}, rendus.map(function (d) {
+        var c = t.compteurs.filter(function (x) { return x.code === d.compteur; })[0];
+        var ligne = (c ? c.libelle : d.compteur) + ', ' + heures(d.heures) + (d.origine ? ', ' + d.origine : '') + (d.date ? ', le ' + dateFr(d.date) : '');
+        var cleAnnulation = cleUnique();
+        return el('div', { classe: 'ligne rang' }, [
+          el('span', { texte: ligne }),
+          deuxTemps('Annuler cette restitution', function (b) { appel('api_annulerDotation', [JETON, d.evt_id, cleAnnulation], suiteGeste('heures', null, 'Restitution annulée. Les heures reviennent dans le solde.', retourRendu), b); },
+            { nom: 'Annuler cette restitution : ' + ligne })
         ]);
       })) : el('p', { texte: 'Aucune pour l\'instant.' })
     ]);
