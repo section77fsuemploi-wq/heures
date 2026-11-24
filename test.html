@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="referrer" content="no-referrer">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-oNCldxwZ5Cm8gMortpB2/C6dkI/kciu0bj4Yo64YlTE='; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src data:; connect-src https://script.google.com https://script.googleusercontent.com; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-68nNPf3kSKblW5I93nN8mwIxY5PIdTdf3Bsi8ZAXITc='; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src data:; connect-src https://script.google.com https://script.googleusercontent.com; base-uri 'none'; form-action 'none'">
 <title>Heures 77, TEST</title>
 <!-- Fichier produit par outils/construire-entree.js à partir de src/html/page.html. Ne pas modifier à la main. -->
 <!-- Polices de la charte. Si le chargement échoue, Georgia et Segoe UI prennent le relais : la page reste lisible.
@@ -149,7 +149,7 @@
 // Tout ce que la page doit savoir se lit après le « # » : cette partie de l'adresse ne part jamais vers l'hébergeur.
 (function () {
   'use strict';
-  var EXEC = "https://script.google.com/macros/s/AKfycbwGIGtDPT4hZvmjWE4v0VTvr8CGE3DHLxsvrPaEQBEK-otXtV1BeVVDIhSSlu2EEZGK/exec", VERSION = "0.11.0", TEST = true;
+  var EXEC = "https://script.google.com/macros/s/AKfycbwGIGtDPT4hZvmjWE4v0VTvr8CGE3DHLxsvrPaEQBEK-otXtV1BeVVDIhSSlu2EEZGK/exec", VERSION = "0.12.0", TEST = true;
   var app = document.getElementById('app');
   function lire(texte) {
     var lu = Object.create(null);
@@ -383,7 +383,8 @@
   var ERREURS = {
     jour_j_ou_apres: 'Ce n\'est plus possible le jour même ni après.', statut: 'L\'état de la demande ne le permet pas.',
     hors_delai: 'Le délai d\'un mois est passé.', contestation_deja_ouverte: 'Une contestation est déjà ouverte.',
-    contestation_deja_tranchee: 'Le bureau a déjà tranché sur ce point.',
+    contestation_deja_tranchee: 'Le bureau a déjà tranché sur ce point.', etat_de_la_personne: 'Cet état vient de toi : il n\'y a rien à contester.',
+    fiche_active: 'Cette fiche est active : la personne peut encore répondre.',
     rien_a_contester: 'Il n\'y a rien à contester sur cette demande.', longueur: 'Écris ta proposition, en 500 caractères au plus.',
     trop_de_propositions: 'Trois propositions par jour, pas plus. Reviens demain.',
     commentaire_trop_long: 'Texte trop long.', avant_le_lendemain_de_la_date: 'La réponse se donne à partir du lendemain de la date.',
@@ -405,7 +406,9 @@
     fiche_deja_utilisee: 'Cette personne a déjà utilisé l\'outil. Sa fiche se désactive, elle ne se supprime pas.',
     correction: 'Cette ligne ne peut pas être annulée.',
     restitution_a_annuler: 'Des heures de ce compteur ont été rendues à la région. Annule d\'abord la ligne des heures rendues à la région, plus bas, puis cet ajout.', parametre: 'Réglage non modifiable.', inchange: 'La valeur est déjà celle-là.', nature: 'Geste inconnu.',
-    trop_de_demandes: 'Dix demandes par jour, pas plus. Reviens demain.'
+    trop_de_demandes: 'Dix demandes par jour, pas plus. Reviens demain.',
+    heures_max: 'Une demande couvre une journée au plus : 7,5 heures.',
+    exercice: 'Année non admise.', exercice_clos: 'Cette année est close : ses heures ne se rendent plus.'
   };
   /** Période d'essai : un fait et une consigne, une phrase par motif. Pas de code : il est réservé aux refus réels. */
   /** Sur la page « Demande refusée » : d'abord quoi faire. */
@@ -417,6 +420,8 @@
     R6: 'Dépose une nouvelle demande.'
   };
   var DATE_EFFET = '';
+  // Année en cours à Paris, lue au dernier appel de l'espace : la page dit l'année d'une demande quand ce n'est pas celle-là.
+  var ANNEE = '';
   // Délai de confirmation lu au dernier appel qui le donne, pour la phrase sur R6.
   var CONFIRMATION_HEURES = null;
   var PHRASES_ESSAI = {
@@ -517,7 +522,7 @@
     { titre: 'Compteur', cle: 'libelle', type: 'nom' }, { titre: 'Reçu', cle: 'dotation', type: 'nombre' }, { titre: 'Rendu à la région', cle: 'rendu', type: 'nombre' }, { titre: 'Engagé', cle: 'engage', type: 'nombre' },
     { titre: 'Cédé', cle: 'cede', type: 'nombre' }, { titre: 'Restitué', cle: 'restitue', type: 'nombre' }, { titre: 'Solde', cle: 'solde', type: 'nombre' }
   ];
-  var AIDE_COMPTEURS = 'Reçu : les heures versées à la section. Rendu à la région : les heures que la section lui a rendues. Engagé : demandé et confirmé. Cédé : saisi chez l\'employeur. Restitué : heures revenues d\'une personne à la section. Solde : ce qui reste à demander.';
+  var AIDE_COMPTEURS = 'Reçu : les heures versées à la section. Rendu à la région : les heures que la section lui a rendues. Engagé : demandé et confirmé. Cédé : saisi chez l\'employeur. Restitué : heures revenues d\'une personne à la section. Solde : ce qui reste à demander. Un solde négatif : plus d\'heures engagées que reçues sur l\'année.';
   /** Ce qu'est chaque compteur, dit à la personne qui remplit le formulaire. */
   var AIDES_COMPTEURS = {
     MT: 'le temps de l\'activité elle-même (visite, réunion, travail sur un texte)',
@@ -747,7 +752,17 @@
     });
     // La date choisie change le mandat qui la couvre : le champ d'accompagnement apparaît ou disparaît,
     // les compteurs réservés s'ouvrent ou se ferment.
+    var aideAnnee = el('p', { classe: 'aide', id: 'aide-date-annee' });
+    aideAnnee.hidden = true;
+    /** Une demande compte sur l'année de sa date : la page le dit quand ce n'est pas l'année en cours. */
+    var majAnnee = function () {
+      var a = date.value ? date.value.substring(0, 4) : '';
+      var phrase = a && ANNEE && a !== ANNEE ? 'Cette date est en ' + a + ' : ta demande comptera sur les heures ' + a + '.' : '';
+      aideAnnee.textContent = typo(phrase);
+      aideAnnee.hidden = !phrase;
+    };
     var suivreDate = function () {
+      majAnnee();
       var etaitCache = blocAccompagnant ? blocAccompagnant.hidden : true;
       var phraseAvant = aideCompteurDate.hidden ? '' : aideCompteurDate.textContent;
       montrer();
@@ -787,10 +802,10 @@
       // Le serveur donne la première date tenable : plus de calcul de tête. Sans elle, on rappelle la règle.
       aide('aide-date', e.premiereDatePossible
         ? 'Première date possible si tu confirmes aujourd\'hui : ' + jourEtDate(e.premiereDatePossible) + '. Le délai se compte à partir de ta confirmation, pas de l\'envoi.'
-        : e.mandate ? 'Avec ton mandat : au moins 24 heures avant, plus 2 jours ouvrés pour la cession.' : 'Sans mandat : au moins 8 jours ouvrés avant, plus 2 jours ouvrés pour la cession.'), date,
+        : e.mandate ? 'Avec ton mandat : au moins 24 heures avant, plus 2 jours ouvrés pour la cession.' : 'Sans mandat : au moins 8 jours ouvrés avant, plus 2 jours ouvrés pour la cession.'), date, aideAnnee,
       el('label', { for: 'objet', texte: 'Objet' }), objet, blocVisite,
       el('label', { for: 'heures', texte: 'Nombre d\'heures' }),
-      aide('aide-heures', 'Par demi-heures, ou par demi-journées de 3,75 h. Exemple : 7,5.'), nb,
+      aide('aide-heures', 'Par demi-heures, ou par demi-journées de 3,75 h. Exemple : 7,5. Une demande couvre une journée au plus : 7,5 heures.'), nb,
       el('label', { for: 'compteur', texte: 'Compteur' }), aideCompteur, compteur,
       el('div', { classe: 'case' }, [accord, el('label', { for: 'accord', texte: 'J\'accepte que la section transmette cette cession à France Travail pour qu\'elle soit saisie.' })]),
       envoyer, retour
@@ -803,13 +818,16 @@
     sans_mandat_a_la_date: 'La personne qui t\'accompagne n\'a pas de mandat à cette date.',
     // Le mandat se juge à la nouvelle date : la phrase ne parle pas d'aujourd'hui, et donne la marche à suivre.
     reserve_aux_titulaires_de_mandat: 'À cette date, tu n\'auras pas de mandat : ce compteur ne te sera plus ouvert. Annule cette demande et déposes-en une sur un compteur « tous ».',
-    visite_sans_titulaire_de_mandat: 'À cette date, tu n\'auras pas de mandat : annule cette demande et déposes-en une avec la personne qui t\'accompagne.' };
+    visite_sans_titulaire_de_mandat: 'À cette date, tu n\'auras pas de mandat : annule cette demande et déposes-en une avec la personne qui t\'accompagne.',
+    autre_annee: 'La date ne peut pas changer d\'année. Pour une date d\'une autre année, annule cette demande et déposes-en une nouvelle.' };
   function phraseReport(r, d) {
     if (!r.refus) return phraseErreur(r);
     if (r.detail === 'format') return 'Choisis la nouvelle date.';
     var reference = ' (' + r.refus.code + ', alinéa ' + r.refus.alinea + ').';
     var garde = ' Ta demande garde sa date du ' + d.dateFr + '.';
     if (r.detail === 'date_passee_ou_du_jour') return REPORTS[r.detail].replace(/\.$/, '') + ' :' + garde.replace(/^ Ta/, ' ta');
+    // Refus technique, sans code ni alinéa : une demande compte sur l'année de sa date.
+    if (r.detail === 'autre_annee') return REPORTS.autre_annee + garde;
     if (r.refus.code === 'R1') return 'Cette date est trop proche' + reference + garde + ' Choisis une date plus lointaine.';
     return (REPORTS[r.detail] || r.refus.libelle.replace(/\.$/, '')).replace(/\.$/, '') + reference + garde;
   }
@@ -829,6 +847,8 @@
       el('p', { texte: resume(d) }),
       el('p', { texte: 'État : ' + d.statutLibelle + (d.essai ? ' (période d\'essai)' : '') + '.' })
     ];
+    if (d.exercice && ANNEE && d.exercice !== ANNEE) lignes.push(el('p', { texte: 'Sur les heures ' + d.exercice + '.' }));
+    if (d.attenteHeures) lignes.push(el('p', { texte: 'Le secrétaire te cède les heures une fois que la section a reçu ses heures ' + d.exercice + '.' }));
     if (d.statut === 'deposee') lignes.push(el('p', { classe: 'encadre', texte: 'À faire : ouvre le mail « Demande ' + d.id + ' à confirmer » et clique sur « Confirmer ma demande ».' }));
     if (d.refus) lignes.push(el('p', { texte: 'Motif : ' + phraseRefus(d.refus) }));
     if (d.refusNonOppose) lignes.push(el('p', { texte: phraseEssai(d.refusNonOppose, 'ta demande') }));
@@ -848,7 +868,11 @@
     if (d.contestation && !(sansObjet && (d.statut === 'refusee' || d.statut === 'expiree'))) {
       lignes.push(el('p', { texte: d.contestation.statut === 'ouverte' ? 'Contestation en attente de la prochaine réunion du bureau.'
         : sansObjet ? 'Ta contestation est sans objet : le refus a été levé.'
-          : 'Le bureau a statué : ' + (d.contestation.decision === 'accueil' ? 'il t\'a donné raison' : 'il a maintenu la décision') + '.' }));
+          : 'Le bureau a statué : ' + (d.contestation.decision === 'accueil' ? 'il t\'a donné raison' : 'il a maintenu la décision') + '.' +
+            (d.contestation.mainRendue ? (d.statut === 'valide' ? ' Le secrétaire va te céder de nouveau les heures. Tu réponds ensuite.' : ' C\'est à toi de répondre.') : '') }));
+    }
+    if (d.statut === 'close') {
+      lignes.push(el('p', { texte: 'Le secrétaire a clos cette demande : aucune réponse n\'a pu être donnée. Les heures reviennent à la section si l\'absence n\'a pas été posée chez l\'employeur.' }));
     }
     if (a.declarer) {
       var utilise = el('input', { type: 'date', id: 'utilise-' + d.id, max: aujourdhuiIso(), 'aria-describedby': 'aide-utilise-' + d.id, 'aria-label': 'Jour où tu as utilisé les heures de la demande ' + d.id });
@@ -864,12 +888,12 @@
         bouton('Non, elle n\'a pas eu lieu', agir('api_declarerEtatEspace', [JETON, d.id, 'pas_fait', '', cleUnique()], 'C\'est noté : elle n\'a pas eu lieu.'), '', 'Non, elle n\'a pas eu lieu, demande ' + d.id));
     }
     if (a.reporter) {
-      var nouvelle = el('input', { type: 'date', id: 'report-' + d.id });
+      var nouvelle = el('input', { type: 'date', id: 'report-' + d.id, max: d.exercice ? d.exercice + '-12-31' : null });
       // Clé tirée au dessin de la carte : deux appuis rapides portent la même clé, un seul report s'écrit.
       var cleReport = cleUnique();
       var bloc = el('div', {}, [
         el('label', { for: 'report-' + d.id, texte: 'Nouvelle date' }),
-        el('p', { classe: 'aide', texte: 'Tu peux changer la date une seule fois, avant le jour prévu.' }), nouvelle,
+        el('p', { classe: 'aide', texte: 'Tu peux changer la date une seule fois, avant le jour prévu, dans la même année.' }), nouvelle,
         bouton('Valider la nouvelle date', function (b) {
           if (!nouvelle.value) return vider(retour).appendChild(erreur('Choisis la nouvelle date.'));
           appel('api_reporter', [JETON, d.id, dateFr(nouvelle.value), cleReport], function (r) {
@@ -900,6 +924,7 @@
       if (!e.ok) return e.erreur === 'lien' ? lienInvalide() : page('Ton espace', [panne()]);
       regle = e.versionRegle;
       DATE_EFFET = e.dateEffet || '';
+      ANNEE = e.exerciceCourant || '';
       if (typeof e.confirmationHeures === 'number') CONFIRMATION_HEURES = e.confirmationHeures;
       var m = e.miseEnRoute;
       // Le secrétaire qui n'a pas encore fait sa fiche et son lien arrive droit sur la mise en route.
@@ -962,12 +987,12 @@
   var GESTES = {
     SAISIE_CESSION: 'Cession saisie', SAISIE_MODIF_DATE: 'Changement de date saisi', SAISIE_RESTITUTION: 'Restitution faite',
     ABSENCE_DEJA_POSEE: 'Rien à restituer, absence déjà posée', REFUS_MANUEL: 'Refus', DEROGATION: 'Dérogation',
-    DECISION_CONTESTATION: 'Décision du bureau notée', DOTATION: 'Heures reçues ajoutées', RESTITUTION_REGION: 'Heures rendues à la région', CORRECTION: 'Ajout d\'heures annulé',
+    DECISION_CONTESTATION: 'Décision du bureau notée', CLOTURE_SANS_REPONSE: 'Demande close sans réponse', DOTATION: 'Heures reçues ajoutées', RESTITUTION_REGION: 'Heures rendues à la région', CORRECTION: 'Ajout d\'heures annulé',
     PARAM_MODIF: 'Réglage changé', STATUT_MANDAT: 'Mandat changé', ROLE_BUREAU: 'Composition du bureau changée',
     CHANTIER_OUVERT: 'Chantier ouvert', CHANTIER_CLOS: 'Chantier fermé', LIEN_REVOQUE: 'Lien coupé',
     PERSONNE_AJOUTEE: 'Fiche créée', PERSONNE_MODIFIEE: 'Fiche corrigée', PERSONNE_SUPPRIMEE: 'Fiche supprimée', EXPORT_LISTE: 'Liste exportée'
   };
-  var MOTIFS_GESTES = { PRIORITES: 'priorités votées', CHANTIER_CLOS: 'chantier fermé', DOUBLON: 'doublon', accueil: 'raison donnée à la personne', maintien: 'décision maintenue',
+  var MOTIFS_GESTES = { fiche_desactivee: 'fiche désactivée', PRIORITES: 'priorités votées', CHANTIER_CLOS: 'chantier fermé', DOUBLON: 'doublon', accueil: 'raison donnée à la personne', maintien: 'décision maintenue',
     R1: 'demande arrivée trop tard', R6: 'demande pas confirmée à temps', CIRCONSTANCE_EXCEPTIONNELLE: 'circonstance exceptionnelle' };
   var ETATS_VISITE = { a_venir: 'à venir', attente_etat: 'en attente de l\'état de réalisation', faite: 'faite', pas_faite: 'pas faite' };
   function valeurReglage(cle, v) {
@@ -976,9 +1001,9 @@
   }
   /** Ce que la colonne « Motif » dit d'un geste : pour un réglage, lequel et ses valeurs ; pour une dérogation, le motif choisi et le refus levé. */
   function motifGeste(a, compteurs) {
-    if (a.type === 'RESTITUTION_REGION' && typeof a.heures === 'number') {
+    if ((a.type === 'RESTITUTION_REGION' || a.type === 'DOTATION') && typeof a.heures === 'number') {
       var c = (compteurs || []).filter(function (x) { return x.code === a.compteur; })[0];
-      return heures(a.heures) + ', ' + (c ? c.libelle : a.compteur);
+      return heures(a.heures) + ', ' + (c ? c.libelle : a.compteur) + (a.exercice ? ', heures ' + a.exercice : '');
     }
     if (a.type === 'PARAM_MODIF' && a.parametre) {
       return (REGLAGES[a.parametre] ? REGLAGES[a.parametre].court : a.parametre) + ' : de ' + valeurReglage(a.parametre, a.avant) + ' à ' + valeurReglage(a.parametre, a.apres);
@@ -1007,21 +1032,33 @@
       if (!r.ok) return r.erreur === 'lien' ? lienInvalide() : page('Suivi pour le bureau', [panne()]);
       var v = r.vue;
       regle = v.versionRegle;
-      var part = v.partSansMandat;
       var gestes = v.actionsAdmin.map(function (a) { return { date: dateFr(a.date), geste: libelleGeste(a), demande: a.demande, motif: motifGeste(a, v.compteurs) }; });
-      var visites = v.visites.map(function (x) { return { date: x.date, site: x.site, equipe: x.equipe, etat: ETATS_VISITE[x.etat] || (x.faite ? 'faite' : '') }; });
       var temoins = v.temoins || [];
-      page('Suivi pour le bureau', [
-        retourEspace(),
-        el('p', { texte: 'Tout ce que la section a cédé, demande par demande, et tout ce que le secrétaire a fait. Tu ne peux rien modifier ici.' }),
-        el('p', { classe: 'aide', texte: 'Sur téléphone, fais glisser un tableau vers la gauche pour voir la suite.' }),
-        v.essai ? el('p', { classe: 'encadre info', texte: 'Période d\'essai : les refus sont calculés et affichés, aucun n\'est opposé.' }) : null,
-        el('h2', { texte: 'Heures de la section' }),
-        tableau(COLONNES_COMPTEURS.concat([{ titre: 'Solde au 31/12, au rythme actuel', cle: 'projection', type: 'nombre' }]), v.compteurs, 'Heures de la section'),
-        el('p', { classe: 'aide', texte: AIDE_COMPTEURS }),
-        el('p', { texte: 'Déplacements : ' + heures(v.deplacement.engage) + ' engagées sur ' + heures(v.deplacement.dotation) + ' reçues' + (v.deplacement.rendu ? ', dont ' + heures(v.deplacement.rendu) + ' rendues à la région.' : '.') }),
-        el('p', { texte: 'Part cédée à des personnes sans mandat : ' + pourcent(part.part, part.seuil) + ' % (' + heures(part.sansMandat) + ' sur ' + heures(part.total) + '). Repère de la section : ' + Math.round(part.seuil * 100) + ' %' + (part.alerte ? ', dépassé.' : '.') + ' Le plafond de l\'accord s\'apprécie au niveau de l\'établissement.' }),
-        el('h2', { texte: 'Par personne' }),
+      // L'année choisie règle les heures, les personnes, les visites et la liste des demandes. Un serveur ancien
+      // n'envoie pas « exercices » : tout est alors montré comme avant, sans liste d'année.
+      var annees = v.annees || [];
+      var choisie = v.exerciceCourant || '';
+      var choix = annees.length ? el('select', { id: 'b-annee' }, annees.map(function (a) { return option(a, a); })) : null;
+      if (choix) choix.value = choisie;
+      var haut = el('div');
+      var bas = el('div');
+      var attente = v.attenteSaisie.map(function (a) {
+        return { demande: a.demande, personne: a.personne, annee: (a.exercice || '') + (a.attenteHeures ? ', heures pas encore saisies' : ''), jours: a.jours };
+      });
+      var dessiner = function () {
+        var x = (v.exercices && v.exercices[choisie]) || v;
+        var part = x.partSansMandat;
+        var visites = x.visites.map(function (y) { return { date: y.date, site: y.site, equipe: y.equipe, etat: ETATS_VISITE[y.etat] || (y.faite ? 'faite' : '') }; });
+        var engage = x.compteurs.some(function (c) { return c.engage > 0; });
+        vider(haut);
+        [el('h2', { texte: choisie ? 'Heures de la section en ' + choisie : 'Heures de la section' }),
+          tableau(COLONNES_COMPTEURS.concat([{ titre: 'Solde au 31/12, au rythme actuel', cle: 'projection', type: 'nombre' }]), x.compteurs, 'Heures de la section'),
+          choisie && x.heuresSaisies === false ? el('p', { classe: 'aide', texte: 'Les heures ' + choisie + ' ne sont pas encore saisies.' +
+            (engage ? ' Les demandes déjà confirmées pour ' + choisie + ' y sont comptées : le solde est négatif en attendant.' : '') }) : null,
+          el('p', { classe: 'aide', texte: AIDE_COMPTEURS }),
+          el('p', { texte: 'Déplacements : ' + heures(x.deplacement.engage) + ' engagées sur ' + heures(x.deplacement.dotation) + ' reçues' + (x.deplacement.rendu ? ', dont ' + heures(x.deplacement.rendu) + ' rendues à la région.' : '.') }),
+          el('p', { texte: 'Part cédée à des personnes sans mandat : ' + pourcent(part.part, part.seuil) + ' % (' + heures(part.sansMandat) + ' sur ' + heures(part.total) + '). Repère de la section : ' + Math.round(part.seuil * 100) + ' %' + (part.alerte ? ', dépassé.' : '.') + ' Le plafond de l\'accord s\'apprécie au niveau de l\'établissement.' }),
+          el('h2', { texte: 'Par personne' }),
         el('p', { classe: 'aide', texte: 'Une ligne par personne, au même format pour tout le monde, secrétaire compris, par ordre alphabétique.' }),
         tableau([
           { titre: 'Personne', cle: 'personne', type: 'nom' }, { titre: 'Heures demandées', cle: 'heuresDemandees', type: 'nombre' },
@@ -1029,20 +1066,34 @@
           { titre: 'Demandes', cle: 'demandes', type: 'nombre' }, { titre: 'Fait', cle: 'faits', type: 'nombre' }, { titre: 'Pas fait', cle: 'pasFaits', type: 'nombre' },
           { titre: 'Annulé', cle: 'annules', type: 'nombre' }, { titre: 'Dates changées', cle: 'reports', type: 'nombre' }, { titre: 'Dérogations', cle: 'derogations', type: 'nombre' },
           { titre: 'Refus du secrétaire', cle: 'refusManuels', type: 'nombre' }, { titre: 'Contestations', cle: 'contestations', type: 'nombre' }
-        ], v.personnes, 'Par personne'),
-        el('h2', { texte: 'Visites de sites' }),
-        tableau([{ titre: 'Date', cle: 'date', type: 'fixe' }, { titre: 'Site', cle: 'site', type: 'nom' }, { titre: 'Équipe', cle: 'equipe', type: 'nom' }, { titre: 'Où elle en est', cle: 'etat', type: 'nom' }], visites, 'Visites de sites'),
-        el('p', { texte: 'Sites sans visite sur l\'exercice : ' + (v.sitesNonVisites.length ? v.sitesNonVisites.join(', ') + '.' : 'aucun.') }),
-        el('h2', { texte: 'Demandes dont le secrétaire n\'a pas encore cédé les heures' }),
-        tableau([{ titre: 'Demande', cle: 'demande', type: 'fixe' }, { titre: 'Personne', cle: 'personne', type: 'nom' }, { titre: 'En attente depuis (jours)', cle: 'jours', type: 'nombre' }], v.attenteSaisie, 'Demandes sans cession'),
-        el('h2', { texte: 'Toutes les demandes' }),
-        tableau([
+        ], x.personnes, 'Par personne'),
+          el('h2', { texte: 'Visites de sites' }),
+          tableau([{ titre: 'Date', cle: 'date', type: 'fixe' }, { titre: 'Site', cle: 'site', type: 'nom' }, { titre: 'Équipe', cle: 'equipe', type: 'nom' }, { titre: 'Où elle en est', cle: 'etat', type: 'nom' }], visites, 'Visites de sites'),
+          el('p', { texte: (choisie ? 'Sites sans visite en ' + choisie + ' : ' : 'Sites sans visite sur l\'exercice : ') + (x.sitesNonVisites.length ? x.sitesNonVisites.join(', ') + '.' : 'aucun.') })
+        ].forEach(function (n) { if (n) haut.appendChild(n); });
+        vider(bas);
+        bas.appendChild(tableau([
           { titre: 'Demande', cle: 'demande', type: 'fixe' }, { titre: 'Personne', cle: 'personne', type: 'nom' }, { titre: 'Date', cle: 'date', type: 'fixe' },
           { titre: 'Objet', cle: 'objet', type: 'nom' }, { titre: 'Heures', cle: 'heures', type: 'nombre' }, { titre: 'État', cle: 'etat', type: 'nom' },
           { titre: 'Utilisées le', cle: 'utiliseLe', type: 'fixe' },
           { titre: 'Accompagné·e par', cle: 'accompagnePar', type: 'nom' }, { titre: 'Refus', cle: 'refus' }, { titre: 'Dérogations', cle: 'derogations' },
           { titre: 'Contestation', cle: 'contestation', type: 'nom' }
-        ], v.journal, 'Toutes les demandes'),
+        ].concat(choisie ? [{ titre: 'Année', cle: 'exercice', type: 'fixe' }] : []), v.journal.filter(function (j) { return !choisie || !j.exercice || j.exercice === choisie; }), 'Toutes les demandes'));
+      };
+      if (choix) choix.addEventListener('change', function () { choisie = choix.value; dessiner(); });
+      dessiner();
+      page('Suivi pour le bureau', [
+        retourEspace(),
+        el('p', { texte: 'Tout ce que la section a cédé, demande par demande, et tout ce que le secrétaire a fait. Tu ne peux rien modifier ici.' }),
+        el('p', { classe: 'aide', texte: 'Sur téléphone, fais glisser un tableau vers la gauche pour voir la suite.' }),
+        v.essai ? el('p', { classe: 'encadre info', texte: 'Période d\'essai : les refus sont calculés et affichés, aucun n\'est opposé.' }) : null,
+        choix ? el('label', { for: 'b-annee', texte: 'Année' }) : null, choix,
+        haut,
+        el('h2', { texte: 'Demandes dont le secrétaire n\'a pas encore cédé les heures' }),
+        tableau([{ titre: 'Demande', cle: 'demande', type: 'fixe' }, { titre: 'Personne', cle: 'personne', type: 'nom' }].concat(annees.length ? [{ titre: 'Année', cle: 'annee', type: 'nom' }] : [])
+          .concat([{ titre: 'En attente depuis (jours)', cle: 'jours', type: 'nombre' }]), attente, 'Demandes sans cession'),
+        el('h2', { texte: 'Toutes les demandes' }),
+        bas,
         el('h2', { texte: 'Ce que le secrétaire a fait' }),
         tableau([{ titre: 'Date', cle: 'date', type: 'fixe' }, { titre: 'Geste', cle: 'geste', type: 'nom' }, { titre: 'Demande', cle: 'demande', type: 'fixe' }, { titre: 'Motif', cle: 'motif', type: 'nom' }], gestes, 'Ce que le secrétaire a fait', 'm'),
         v.rapprochement.date ? el('p', { texte: 'Dernier rapprochement avec le classeur de référence le ' + dateFr(v.rapprochement.date) + '. Cessions sans demande : ' + v.rapprochement.cessionsSansDemande + '.' }) : null,
@@ -1158,20 +1209,32 @@
     ]);
   }
 
+  /** Les années distinctes d'une liste de lignes, dans l'ordre. */
+  function anneesDe(lignes) {
+    var vues = {};
+    lignes.forEach(function (l) { if (l.exercice) vues[l.exercice] = true; });
+    return Object.keys(vues).sort();
+  }
+
   // --- sommaire
   ECRANS.gestion = function (message) {
     var t = G.tableau, m = t.miseEnRoute;
-    var jour = t.aSaisir.length + t.aRestituer.length + t.contestations.length;
+    var faisables = t.aSaisir.filter(function (l) { return !l.attenteHeures; });
+    var enAttente = t.aSaisir.filter(function (l) { return l.attenteHeures; });
+    var jour = faisables.length + t.aRestituer.length + t.contestations.length + (t.aClore || []).length;
     var attend = [];
-    if (t.aSaisir.length) attend.push(pluriel(t.aSaisir.length, 'cession à saisir', 'cessions à saisir'));
+    if (faisables.length) attend.push(pluriel(faisables.length, 'cession à saisir', 'cessions à saisir'));
     if (t.aRestituer.length) attend.push(pluriel(t.aRestituer.length, 'restitution', 'restitutions'));
     if (t.contestations.length) attend.push(pluriel(t.contestations.length, 'décision du bureau à noter', 'décisions du bureau à noter'));
+    if ((t.aClore || []).length) attend.push(pluriel(t.aClore.length, 'demande à clore', 'demandes à clore'));
     var entree = function (libelle, cible, principal) { return el('p', {}, [bouton(libelle, function () { aller(cible); }, principal ? '' : 'second')]); };
     // Rempli après coup, seulement si un point de l'état de l'outil ne va pas.
     var alerteEtat = el('div');
     page('Gérer la section', [
       navigation(false), annonce(message), alerteEtat,
       el('p', { classe: attend.length ? 'encadre' : 'encadre info', texte: attend.length ? 'Ce qui t\'attend : ' + attend.join(', ') + '.' : 'Rien ne t\'attend aujourd\'hui.' }),
+      enAttente.length ? el('p', { classe: 'encadre info', texte: 'Les heures ' + anneesDe(enAttente).join(' et ') + ' ne sont pas encore saisies : ' +
+        pluriel(enAttente.length, 'demande les attend', 'demandes les attendent') + '.' }) : null,
       routeFinie() ? null : el('p', {}, [bouton('Reprendre la mise en route', function () { aller('route'); })]),
       entree('Le travail du jour (' + jour + ')', 'travail', jour > 0),
       entree('Personnes et liens (' + (m.sansLien ? m.sansLien + ' sans lien' : pluriel(m.personnes + 1, 'personne', 'personnes')) + ')', 'personnes'),
@@ -1270,7 +1333,12 @@
     // Une demande éteinte à qui le bureau donne raison repart en confirmation : on le dit au secrétaire.
     var decider = function (c, decision) {
       return fait('api_decider', [c.demande, decision],
-        function (r) { return r.aConfirmer ? 'Décision notée. La personne reçoit un nouveau lien pour confirmer sa demande.' : c.demande + ' : décision notée.'; },
+        function (r) {
+          if (r.aConfirmer) return 'Décision notée. La personne reçoit un nouveau lien pour confirmer sa demande.';
+          if (r.mainRendue === 'valide') return c.demande + ' : décision notée. La cession est à saisir de nouveau, elle est dans « À saisir chez l\'employeur ».';
+          if (r.mainRendue) return c.demande + ' : décision notée. La personne répond elle-même, depuis son espace.';
+          return c.demande + ' : décision notée.';
+        },
         { rien_a_contester: 'Il n\'y a plus rien à trancher sur cette demande.' });
     };
     var liste = function (motifs) { return Object.keys(motifs).map(function (k) { return option(k, motifs[k]); }); };
@@ -1279,12 +1347,17 @@
       if (l.nature === 'cession') return l.jours ? 'confirmée il y a ' + pluriel(l.jours, 'jour', 'jours') : 'confirmée aujourd\'hui';
       return l.jours ? 'en attente depuis ' + pluriel(l.jours, 'jour', 'jours') : 'en attente depuis aujourd\'hui';
     };
+    // L'année d'une ligne, dite quand ce n'est pas l'année en cours.
+    var annee = function (l) {
+      if (!l.exercice || !t.exerciceCourant || l.exercice === t.exerciceCourant) return '';
+      return l.exercice < t.exerciceCourant ? ' Heures ' + l.exercice + ', année close.' : ' Heures ' + l.exercice + '.';
+    };
     var decrire = function (l) {
       return [el('p', { classe: 'num', texte: l.personne + ', le ' + l.date }),
-        el('p', { texte: heures(l.heures) + ' sur « ' + l.compteur + ' ». ' + l.libelle + '. Demande ' + l.demande + ', ' + depuis(l) + '.' })];
+        el('p', { texte: heures(l.heures) + ' sur « ' + l.compteur + ' ». ' + l.libelle + '. Demande ' + l.demande + ', ' + depuis(l) + '.' + annee(l) })];
     };
 
-    var aSaisir = t.aSaisir.map(function (l) {
+    var carteSaisie = function (l) {
       var blocs = decrire(l).concat([deuxTemps('J\'ai saisi chez l\'employeur', fait('api_saisir', [l.demande, l.nature], l.demande + ' : saisie notée.'),
         { classe: '', nom: 'J\'ai saisi chez l\'employeur, demande ' + l.demande })]);
       if (l.nature === 'cession') {
@@ -1294,9 +1367,12 @@
             { nom: 'Refuser la demande ' + l.demande })])]));
       }
       return el('div', { classe: 'carte' }, blocs);
-    });
+    };
+    var aSaisir = t.aSaisir.filter(function (l) { return !l.attenteHeures; }).map(carteSaisie);
+    var attenteHeures = t.aSaisir.filter(function (l) { return l.attenteHeures; });
     var aRestituer = t.aRestituer.map(function (l) {
       return el('div', { classe: 'carte' }, decrire(l).concat([
+        l.origine === 'close' ? el('p', { texte: 'Demande close sans réponse : la fiche est désactivée.' }) : null,
         deuxTemps('J\'ai fait la restitution chez l\'employeur', fait('api_saisir', [l.demande, 'restitution'], l.demande + ' : restitution faite, c\'est noté.'),
           { classe: '', nom: 'J\'ai fait la restitution chez l\'employeur, demande ' + l.demande }),
         deuxTemps('Rien à restituer : l\'absence était déjà posée', fait('api_saisir', [l.demande, 'absence_deja_posee'], l.demande + ' : heures consommées, c\'est noté.'),
@@ -1317,16 +1393,30 @@
     var decisions = t.contestations.map(function (c) {
       return el('div', { classe: 'carte' }, [el('p', { classe: 'num', texte: c.personne }),
         el('p', { texte: 'Demande ' + c.demande + ' : conteste ' + (c.objet === 'refus' ? 'un refus.' : 'un état.') }),
+        c.suite === 'cedee' ? el('p', { classe: 'aide', texte: 'Si tu notes que le bureau lui donne raison, la demande se rouvre : la personne répond elle-même.' }) : null,
+        c.suite === 'valide' ? el('p', { classe: 'aide', texte: 'Les heures sont déjà restituées chez l\'employeur. Si tu notes que le bureau lui donne raison, la demande repasse en attente de cession : tu les cèdes de nouveau.' }) : null,
+        c.suite === 'aucune' ? el('p', { classe: 'aide', texte: 'Cette demande ne peut pas se rouvrir. Ta décision est notée au journal, rien ne change sur la demande.' }) : null,
         deuxTemps('Le bureau donne raison à la personne', decider(c, 'accueil'), { nom: 'Le bureau donne raison à la personne, demande ' + c.demande }),
         deuxTemps('Le bureau maintient la décision', decider(c, 'maintien'), { nom: 'Le bureau maintient la décision, demande ' + c.demande })]);
     });
-    var rien = !aSaisir.length && !aRestituer.length && !decisions.length;
+    var aClore = (t.aClore || []).map(function (l) {
+      return el('div', { classe: 'carte' }, [el('p', { classe: 'num', texte: l.personne + ', le ' + l.date }),
+        el('p', { texte: heures(l.heures) + ' sur « ' + l.compteur + ' ». Demande ' + l.demande + ', ' + (l.statut === 'valide' ? 'confirmée, cession non saisie' : 'cédée, sans réponse possible') + '.' + annee(l) }),
+        deuxTemps('Clore sans réponse', fait('api_clore', [l.demande], l.demande + (l.statut === 'valide' ? ' : demande close. Les heures sont libérées.' : ' : demande close. La ligne est dans « Heures à restituer chez l\'employeur ».')),
+          { nom: 'Clore sans réponse, demande ' + l.demande })]);
+    });
+    var rien = !aSaisir.length && !attenteHeures.length && !aRestituer.length && !decisions.length && !aClore.length;
     var bloc = function (cartes, titre, texte) { return cartes.length ? [el('h2', { texte: titre }), texte ? el('p', { classe: 'aide', texte: texte }) : null, el('div', {}, cartes)] : []; };
     page('Le travail du jour', [navigation(true), annonce(message), retour,
       rien ? el('p', { classe: 'encadre info', texte: 'Rien à traiter aujourd\'hui.' }) : null
     ].concat(
       bloc(aSaisir, 'À saisir chez l\'employeur'),
-      bloc(aRestituer, 'Heures à restituer chez l\'employeur', 'Une activité annulée ou qui n\'a pas eu lieu : les heures reviennent à la section si l\'absence n\'a pas été posée.'),
+      [].concat.apply([], anneesDe(attenteHeures).map(function (a) {
+        return bloc(attenteHeures.filter(function (l) { return l.exercice === a; }).map(carteSaisie), 'En attente des heures ' + a,
+          'Ces demandes sont confirmées et comptent sur ' + a + '. Tu cèdes les heures une fois les heures ' + a + ' reçues et saisies ici.');
+      })),
+      bloc(aRestituer, 'Heures à restituer chez l\'employeur', 'Une activité annulée, qui n\'a pas eu lieu, ou une demande close sans réponse : les heures reviennent à la section si l\'absence n\'a pas été posée.'),
+      bloc(aClore, 'Demandes à clore sans réponse', 'La fiche de la personne est désactivée : elle ne peut plus répondre. Tu ne réponds pas à sa place. Clore ne dit ni « fait » ni « pas fait » : une demande cédée passe dans « Heures à restituer chez l\'employeur ».'),
       bloc(decisions, 'Décisions du bureau à noter', 'Le bureau décide en réunion. Ici, tu notes seulement ce qu\'il a décidé.'),
       bloc(derogations, 'Refus que tu peux lever', 'Deux refus seulement : la demande arrivée trop tard, et la demande pas confirmée à temps. Le bureau reçoit un mail à chaque fois.')
     ));
@@ -1480,6 +1570,9 @@
     var t = G.tableau;
     var retour = el('div');
     var compteur = el('select', { id: 'h-compteur' }, t.compteurs.map(function (c) { return option(c.code, c.libelle); }));
+    // L'année des heures : l'année en cours par défaut. Un serveur ancien n'en donne pas : la liste reste vide et le serveur prend l'année en cours.
+    var anneeAjout = el('select', { id: 'h-annee', 'aria-describedby': 'aide-h-annee' }, (t.anneesAjout || []).map(function (a) { return option(a, a); }));
+    if (t.exerciceCourant) anneeAjout.value = t.exerciceCourant;
     var nb = el('input', { type: 'text', id: 'h-heures', inputmode: 'decimal', autocomplete: 'off' });
     var origine = el('input', { type: 'text', id: 'h-origine', maxlength: '80', autocomplete: 'off' });
     // Les premières heures ferment la mise en route : on revient la clore, avec la suite proposée.
@@ -1487,7 +1580,7 @@
     // Clé tirée au dessin de l'écran : deux appuis sur « Ajouter ces heures » n'ajoutent qu'une fois.
     var cle = cleUnique();
     var ajouter = bouton('Ajouter ces heures', function (b) {
-      appel('api_doter', [JETON, compteur.value, nb.value, origine.value, cle], function (r) {
+      appel('api_doter', [JETON, compteur.value, nb.value, origine.value, cle, anneeAjout.value], function (r) {
         if (!r.ok) return dire(retour, r);
         chargerGestion(function () {
           if (enRoute && routeFinie()) return aller('route', null, 'Heures ajoutées. La mise en route est finie.');
@@ -1498,26 +1591,41 @@
     // Rendu à la région : les heures rendues sortent du solde. Même garde contre le double appui.
     var retourRendu = el('div');
     var compteurRendu = el('select', { id: 'rg-compteur' }, t.compteurs.map(function (c) { return option(c.code, c.libelle); }));
+    var anneeRendu = el('select', { id: 'rg-annee' }, (t.anneesRendu || []).map(function (a) { return option(a, a); }));
+    if (t.exerciceCourant) anneeRendu.value = t.exerciceCourant;
     var nbRendu = el('input', { type: 'text', id: 'rg-heures', inputmode: 'decimal', autocomplete: 'off' });
     var noteRendu = el('input', { type: 'text', id: 'rg-note', maxlength: '80', autocomplete: 'off' });
     var cleRendu = cleUnique();
     var rendre = bouton('Rendre ces heures à la région', function (b) {
-      appel('api_rendreRegion', [JETON, compteurRendu.value, nbRendu.value, noteRendu.value, cleRendu],
+      appel('api_rendreRegion', [JETON, compteurRendu.value, nbRendu.value, noteRendu.value, cleRendu, anneeRendu.value],
         suiteGeste('heures', null, 'Heures rendues à la région. Elles sont sorties du solde.', retourRendu, { solde_insuffisant: 'La section n\'a pas autant d\'heures disponibles sur ce compteur. Regarde la colonne « Solde ».' }), b);
     });
     var rendus = t.rendus || [];
+    // Un tableau par année : l'année en cours d'abord, l'année à venir ensuite, les années closes repliées.
+    var exercices = t.exercices || [{ annee: '', statut: 'en_cours', heuresSaisies: true, compteurs: t.compteurs }];
+    var tableaux = exercices.map(function (x) {
+      var titre = !x.annee ? 'Heures de la section' : 'Heures ' + x.annee + (x.statut === 'en_cours' ? ', année en cours' : x.statut === 'a_venir' ? ', année à venir' : ', année close');
+      var engage = x.compteurs.some(function (c) { return c.engage > 0; });
+      var contenu = [tableau(COLONNES_COMPTEURS, x.compteurs, titre),
+        x.statut === 'close' ? el('p', { classe: 'aide', texte: 'Année close le 31/12/' + x.annee + ' à minuit. Le solde n\'est pas reporté.' }) : null,
+        x.annee && !x.heuresSaisies ? el('p', { classe: 'aide', texte: 'Les heures ' + x.annee + ' ne sont pas encore saisies.' +
+          (engage ? ' Les demandes déjà confirmées pour ' + x.annee + ' y sont comptées : le solde est négatif en attendant.' : '') }) : null];
+      if (x.statut === 'close') return el('details', {}, [el('summary', { texte: titre })].concat(contenu));
+      return el('div', {}, [x.annee ? el('h2', { texte: titre }) : null].concat(contenu));
+    });
     page('Heures de la section', [
-      navigation(true), annonce(message), retour,
-      tableau(COLONNES_COMPTEURS, t.compteurs, 'Heures de la section'), el('p', { classe: 'aide', texte: AIDE_COMPTEURS }),
+      navigation(true), annonce(message), retour
+    ].concat(tableaux, [el('p', { classe: 'aide', texte: AIDE_COMPTEURS }),
       el('h2', { texte: 'Ajouter des heures reçues' }),
       el('p', { classe: 'aide', texte: 'Une ligne chaque fois que la section reçoit des heures, compteur par compteur. Exemple : 150 heures en janvier sur « Mandats tous ».' }),
       el('label', { for: 'h-compteur', texte: 'Compteur' }), compteur,
+      el('label', { for: 'h-annee', texte: 'Année des heures' }), aide('aide-h-annee', 'Les heures valent pour une année civile, du 1er janvier au 31 décembre.'), anneeAjout,
       el('label', { for: 'h-heures', texte: 'Nombre d\'heures reçues' }), nb,
       el('label', { for: 'h-origine', texte: 'D\'où viennent ces heures ? (facultatif)' }), origine, ajouter,
       el('h2', { texte: 'Heures déjà ajoutées' }),
       t.dotations.length ? el('div', {}, t.dotations.map(function (d) {
         var c = t.compteurs.filter(function (x) { return x.code === d.compteur; })[0];
-        var ligne = (c ? c.libelle : d.compteur) + ', ' + heures(d.heures) + (d.origine ? ', ' + d.origine : '') + (d.date ? ', le ' + dateFr(d.date) : '');
+        var ligne = (c ? c.libelle : d.compteur) + ', ' + heures(d.heures) + (d.exercice ? ', heures ' + d.exercice : '') + (d.origine ? ', ' + d.origine : '') + (d.date ? ', le ' + dateFr(d.date) : '');
         var cleAnnulation = cleUnique();
         return el('div', { classe: 'ligne rang' }, [
           el('span', { texte: ligne }),
@@ -1529,12 +1637,13 @@
       el('p', { classe: 'aide', texte: 'Quand la section rend des heures à la région, note-le ici : elles sortent du solde du compteur. L\'outil ne prévient pas la région, c\'est toi qui le fais.' }),
       retourRendu,
       el('label', { for: 'rg-compteur', texte: 'Compteur des heures rendues' }), compteurRendu,
+      el('label', { for: 'rg-annee', texte: 'Année des heures rendues' }), anneeRendu,
       el('label', { for: 'rg-heures', texte: 'Nombre d\'heures rendues' }), nbRendu,
       el('label', { for: 'rg-note', texte: 'Précision (facultatif)' }), noteRendu, rendre,
       el('h2', { texte: 'Heures déjà rendues à la région' }),
       rendus.length ? el('div', {}, rendus.map(function (d) {
         var c = t.compteurs.filter(function (x) { return x.code === d.compteur; })[0];
-        var ligne = (c ? c.libelle : d.compteur) + ', ' + heures(d.heures) + (d.origine ? ', ' + d.origine : '') + (d.date ? ', le ' + dateFr(d.date) : '');
+        var ligne = (c ? c.libelle : d.compteur) + ', ' + heures(d.heures) + (d.exercice ? ', heures ' + d.exercice : '') + (d.origine ? ', ' + d.origine : '') + (d.date ? ', le ' + dateFr(d.date) : '');
         var cleAnnulation = cleUnique();
         return el('div', { classe: 'ligne rang' }, [
           el('span', { texte: ligne }),
@@ -1542,7 +1651,7 @@
             { nom: 'Annuler cette ligne : ' + ligne })
         ]);
       })) : vide('f')
-    ]);
+    ]));
   };
 
   // --- chantiers
