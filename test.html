@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="referrer" content="no-referrer">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-xq8xnaLUQSRVdvKwhw+HxQVKpAaiEeSIQRA3C4DoygM='; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src data:; connect-src https://script.google.com https://script.googleusercontent.com; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-kZqdeg3XMzLzaOuAhORXwQwqDjJpE+Vg68HynxQIHmQ='; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src data:; connect-src https://script.google.com https://script.googleusercontent.com; base-uri 'none'; form-action 'none'">
 <title>Heures 77, TEST</title>
 <!-- Fichier produit par outils/construire-entree.js à partir de src/html/page.html. Ne pas modifier à la main. -->
 <!-- Polices de la charte. Si le chargement échoue, Georgia et Segoe UI prennent le relais : la page reste lisible.
@@ -436,7 +436,7 @@
   }
   /** Demande acceptée à crédit : la section n'a encore reçu aucune heure de son année. Même phrase que le mail (Messages.phraseReserve). */
   function phraseReserve(annee) {
-    return 'Ta demande est acceptée sous réserve : la section n\'a pas encore reçu ses heures ' + annee + '. Le secrétaire te les cède quand elles arrivent.';
+    return 'Ta demande est acceptée sous réserve : la section n\'a pas encore reçu ses heures ' + annee + '. Le secrétaire te les cède si les heures reçues le permettent.';
   }
   // Délai de confirmation lu au dernier appel qui le donne, pour la phrase sur R6.
   var CONFIRMATION_HEURES = null;
@@ -871,7 +871,7 @@
     ];
     if (d.exercice && ANNEE && d.exercice !== ANNEE) lignes.push(el('p', { texte: 'Sur les heures ' + d.exercice + '.' }));
     if (d.attenteHeures) lignes.push(el('p', { texte: phraseReserve(d.exercice) }));
-    else if (d.auDelaDesHeures) lignes.push(el('p', { texte: 'Ta demande est acceptée sous réserve : les heures ' + d.exercice + ' reçues par la section ne la couvrent pas encore.' }));
+    else if (d.auDelaDesHeures) lignes.push(el('p', { texte: 'Ta demande est acceptée sous réserve : les heures ' + d.exercice + ' reçues par la section ne la couvrent pas encore. Le secrétaire la cède si les heures reçues le permettent.' }));
     if (d.statut === 'deposee') lignes.push(el('p', { classe: 'encadre', texte: 'À faire : ouvre le mail « Demande ' + d.id + ' à confirmer » et clique sur « Confirmer ma demande ».' }));
     if (d.refus) lignes.push(el('p', { texte: 'Motif : ' + phraseRefus(d.refus) }));
     if (d.refusNonOppose) lignes.push(el('p', { texte: phraseEssai(d.refusNonOppose, 'ta demande') }));
@@ -1431,9 +1431,9 @@
       }
       return el('div', { classe: 'carte' }, decrire(l).concat([
         l.origine === 'close' ? el('p', { texte: 'Demande close sans réponse : la fiche est désactivée.' }) : null,
-        deuxTemps('J\'ai fait la restitution chez l\'employeur', fait('api_saisir', [l.demande, 'restitution'], l.demande + ' : restitution faite, c\'est noté.'),
+        l.contestee ? el('p', { classe: 'aide', texte: 'Une contestation est ouverte sur cette demande : la décision du bureau d\'abord.' }) : deuxTemps('J\'ai fait la restitution chez l\'employeur', fait('api_saisir', [l.demande, 'restitution'], l.demande + ' : restitution faite, c\'est noté.'),
           { classe: '', nom: 'J\'ai fait la restitution chez l\'employeur, demande ' + l.demande }),
-        deuxTemps('Rien à restituer : l\'absence était déjà posée', fait('api_saisir', [l.demande, 'absence_deja_posee'], l.demande + ' : heures consommées, c\'est noté.'),
+        l.contestee ? null : deuxTemps('Rien à restituer : l\'absence était déjà posée', fait('api_saisir', [l.demande, 'absence_deja_posee'], l.demande + ' : heures consommées, c\'est noté.'),
           { nom: 'Rien à restituer : l\'absence était déjà posée, demande ' + l.demande })]));
     };
     var aClasser = t.aRestituer.filter(function (l) { return l.anneeClose; }).map(carteRestitution);
