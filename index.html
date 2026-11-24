@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="referrer" content="no-referrer">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-eIH9OwJL4x0RbNY0VWSWV4d333l0onEkp/hmhchLzfk='; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src data:; connect-src https://script.google.com https://script.googleusercontent.com; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-ThQHNIgpCDsNgljdK8H+aIZDMKmFff1dQJk3IUUNdGo='; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src data:; connect-src https://script.google.com https://script.googleusercontent.com; base-uri 'none'; form-action 'none'">
 <title>Heures 77</title>
 <!-- Fichier produit par outils/construire-entree.js à partir de src/html/page.html. Ne pas modifier à la main. -->
 <!-- Polices de la charte. Si le chargement échoue, Georgia et Segoe UI prennent le relais : la page reste lisible.
@@ -147,7 +147,7 @@
 // Tout ce que la page doit savoir se lit après le « # » : cette partie de l'adresse ne part jamais vers l'hébergeur.
 (function () {
   'use strict';
-  var EXEC = "https://script.google.com/macros/s/AKfycbxrMezLrxAHMrG_GU1Osa-tLshxGHBr7xdxBqcNxZe9l6isF4a5SeFSM45ggbDYu5RzUg/exec", VERSION = "0.9.0", TEST = false;
+  var EXEC = "https://script.google.com/macros/s/AKfycbxrMezLrxAHMrG_GU1Osa-tLshxGHBr7xdxBqcNxZe9l6isF4a5SeFSM45ggbDYu5RzUg/exec", VERSION = "0.10.0", TEST = false;
   var app = document.getElementById('app');
   function lire(texte) {
     var lu = Object.create(null);
@@ -349,6 +349,15 @@
   }
   function aide(id, texte) { return el('p', { classe: 'aide', id: id, texte: texte }); }
 
+  /** Aujourd'hui, à l'heure de l'appareil, au format des champs de date. Le serveur, lui, juge à l'heure de Paris. */
+  function aujourdhuiIso() {
+    var n = new Date();
+    var deux = function (x) { return (x < 10 ? '0' : '') + x; };
+    return n.getFullYear() + '-' + deux(n.getMonth() + 1) + '-' + deux(n.getDate());
+  }
+  var LIBELLE_UTILISATION = 'Si oui, quel jour as-tu utilisé ces heures ?';
+  // Texte sobre, voulu par Julien le 24/11/2026 : ni mise en garde, ni flatterie. On dit ce qui est demandé, et rien d'autre.
+  var AIDE_UTILISATION = 'Tu déclares toi-même la date. Aucune pièce n\'est demandée.';
   var CHAMPS = { date: 'Date', type: 'Objet', site: 'Site', chantier: 'Objet', heures: 'Nombre d\'heures', compteur: 'Compteur',
     accompagnant: 'Accompagnement', consentementTransmission: 'Accord de transmission', heureDebut: 'Heure de début' };
   var MOTIFS = {
@@ -367,6 +376,9 @@
     commentaire_trop_long: 'Texte trop long.', avant_le_lendemain_de_la_date: 'La réponse se donne à partir du lendemain de la date.',
     main_a_une_autre_personne: 'Ce n\'est pas à toi de répondre pour l\'instant.', valeur_hors_liste: 'Réponse non prévue.',
     demande_non_cedee: 'Cette demande n\'attend pas de réponse sur l\'activité.',
+    date_utilisation_manquante: 'Indique le jour où tu as utilisé ces heures.', date_utilisation_illisible: 'Date non valable.',
+    date_utilisation_future: 'La date d\'utilisation ne peut pas être dans le futur.',
+    date_utilisation_hors_exercice: 'La date d\'utilisation doit être dans l\'année de la demande.',
     demande: 'Demande introuvable.', technique: 'L\'outil n\'a pas pu traiter la demande. Réessaie dans quelques minutes.',
     motif_manquant: 'Choisis un motif dans la liste.', motif_hors_liste: 'Motif hors liste.', demande_non_valide: 'L\'état de la demande ne le permet plus.',
     code_non_derogeable: 'Ce refus ne se lève pas.', aucun_refus_de_ce_code: 'Il n\'y a plus de refus de ce type sur cette demande.',
@@ -547,9 +559,11 @@
           confirmer, retour]);
       }
       var mot = el('textarea', { id: 'mot', maxlength: String(r.commentaireMax), 'aria-describedby': 'aide-mot' });
+      var utilise = r.dateUtilisationAttendue ? el('input', { type: 'date', id: 'utilise', max: aujourdhuiIso(), 'aria-describedby': 'aide-utilise' }) : null;
       var repondre = function (valeur) {
         return function (b) {
-          appel('api_declarerEtat', [JETON, valeur, mot.value], function (c) {
+          if (valeur === 'fait' && utilise && !utilise.value) return vider(retour).appendChild(erreur(ERREURS.date_utilisation_manquante));
+          appel('api_declarerEtat', [JETON, valeur, mot.value, valeur === 'fait' && utilise ? dateFr(utilise.value) : ''], function (c) {
             if (!c.ok) return dire(retour, c);
             if (c.sansEffet) return dejaTraite(c);
             fini('C\'est noté', 'Demande ' + d.id + ' : ' + (c.valeur === 'fait' ? 'elle a eu lieu.' : 'elle n\'a pas eu lieu.'), 'reussite');
@@ -562,6 +576,9 @@
         el('label', { for: 'mot', texte: 'Un mot à ajouter ? Tu peux laisser vide.' }),
         aide('aide-mot', 'Ne nomme personne, n\'écris rien sur la santé ou la vie privée. ' + r.commentaireMax + ' caractères au plus.'),
         mot,
+        utilise ? el('label', { for: 'utilise', texte: LIBELLE_UTILISATION }) : null,
+        utilise ? aide('aide-utilise', AIDE_UTILISATION) : null,
+        utilise,
         bouton('Oui, elle a eu lieu', repondre('fait')),
         bouton('Non, elle n\'a pas eu lieu', repondre('pas_fait')),
         retour]);
@@ -594,18 +611,18 @@
       expliques.length ? el('ul', {}, expliques.map(function (c) { return el('li', { texte: '« ' + c.libelle + ' » : ' + AIDES_COMPTEURS[c.code] + '.' }); })) : null
     ]);
     var accord = el('input', { type: 'checkbox', id: 'accord', 'aria-required': 'true' });
-    var blocVisite = el('div', {}, [
-      el('label', { for: 'site', texte: 'Site' }), site,
-      el('label', { for: 'accompagnant', texte: 'Titulaire de mandat qui t\'accompagne' }),
-      aide('aide-accompagnant', e.mandate ? 'Facultatif pour toi. Chaque titulaire de mandat dépose sa propre demande.' : 'Sans mandat, tu ne visites jamais seul·e.'),
-      accompagnant
-    ]);
+    // Seule une personne sans mandat doit être accompagnée. Avec un mandat, on ne nomme personne.
+    var blocVisite = el('div', {}, [el('label', { for: 'site', texte: 'Site' }), site].concat(e.mandate
+      ? [el('p', { classe: 'aide', texte: 'Avec ton mandat, tu visites seul·e ou avec d\'autres titulaires de mandat. Chacun·e dépose sa propre demande.' })]
+      : [el('label', { for: 'accompagnant', texte: 'Titulaire de mandat qui t\'accompagne' }),
+        aide('aide-accompagnant', 'Sans mandat, tu ne visites jamais seul·e.'),
+        accompagnant]));
     blocVisite.hidden = true;
     objet.addEventListener('change', function () { blocVisite.hidden = objet.value !== 'visite'; });
     var retour = el('div');
     var envoyer = bouton('Envoyer la demande', function (b) {
       var f = { date: dateFr(date.value), objet: objet.value, site: site.value, heures: nb.value, compteur: compteur.value,
-        accompagnant: objet.value === 'visite' ? accompagnant.value : '', consentement: accord.checked };
+        accompagnant: objet.value === 'visite' && !e.mandate ? accompagnant.value : '', consentement: accord.checked };
       appel('api_deposer', [JETON, f, cle], function (r) {
         vider(retour);
         if (r.ok) {
@@ -680,6 +697,7 @@
       lignes.push(el('p', { texte: 'Accompagné·e par ' + d.accompagnePar + '.' +
         (d.nonConfirmeParAccompagnant ? ' Non confirmé par l\'accompagnant·e' + (a.declarer ? ' : c\'est à toi de répondre.' : '.') : '') }));
     }
+    if (d.utiliseLe) lignes.push(el('p', { texte: 'Heures utilisées le ' + d.utiliseLe + ', d\'après ta déclaration.' }));
     if (d.reports) lignes.push(el('p', { texte: 'Date déjà changée une fois.' }));
     // Le refus contesté a été levé entre-temps : la contestation n'a plus d'objet. Si un nouveau refus
     // est venu ensuite, la phrase serait fausse : on ne l'écrit pas, et le bouton suit le serveur.
@@ -690,8 +708,16 @@
           : 'Le bureau a statué : ' + (d.contestation.decision === 'accueil' ? 'il t\'a donné raison' : 'il a maintenu la décision') + '.' }));
     }
     if (a.declarer) {
+      var utilise = el('input', { type: 'date', id: 'utilise-' + d.id, max: aujourdhuiIso(), 'aria-describedby': 'aide-utilise-' + d.id, 'aria-label': 'Jour où tu as utilisé les heures de la demande ' + d.id });
+      // Clé tirée au dessin de la carte : deux appuis rapides sur « Oui » portent la même clé.
+      var cleOui = cleUnique();
       lignes.push(el('p', { classe: 'encadre', texte: 'À faire : cette activité a-t-elle eu lieu ? Aucun motif n\'est demandé.' }),
-        bouton('Oui, elle a eu lieu', agir('api_declarerEtatEspace', [JETON, d.id, 'fait', '', cleUnique()], 'C\'est noté : elle a eu lieu.'), '', 'Oui, elle a eu lieu, demande ' + d.id),
+        el('label', { for: 'utilise-' + d.id, texte: LIBELLE_UTILISATION }),
+        aide('aide-utilise-' + d.id, AIDE_UTILISATION), utilise,
+        bouton('Oui, elle a eu lieu', function (b) {
+          if (!utilise.value) return vider(retour).appendChild(erreur(ERREURS.date_utilisation_manquante));
+          agir('api_declarerEtatEspace', [JETON, d.id, 'fait', '', cleOui, dateFr(utilise.value)], 'C\'est noté : elle a eu lieu.')(b);
+        }, '', 'Oui, elle a eu lieu, demande ' + d.id),
         bouton('Non, elle n\'a pas eu lieu', agir('api_declarerEtatEspace', [JETON, d.id, 'pas_fait', '', cleUnique()], 'C\'est noté : elle n\'a pas eu lieu.'), '', 'Non, elle n\'a pas eu lieu, demande ' + d.id));
     }
     if (a.reporter) {
@@ -868,6 +894,7 @@
         tableau([
           { titre: 'Demande', cle: 'demande', type: 'fixe' }, { titre: 'Personne', cle: 'personne', type: 'nom' }, { titre: 'Date', cle: 'date', type: 'fixe' },
           { titre: 'Objet', cle: 'objet', type: 'nom' }, { titre: 'Heures', cle: 'heures', type: 'nombre' }, { titre: 'État', cle: 'etat', type: 'nom' },
+          { titre: 'Utilisées le', cle: 'utiliseLe', type: 'fixe' },
           { titre: 'Accompagné·e par', cle: 'accompagnePar', type: 'nom' }, { titre: 'Refus', cle: 'refus' }, { titre: 'Dérogations', cle: 'derogations' },
           { titre: 'Contestation', cle: 'contestation', type: 'nom' }
         ], v.journal, 'Toutes les demandes'),
@@ -1196,7 +1223,7 @@
     ].concat(nom.bloc, prenom.bloc, mail.bloc, [enregistrer, el('h2', { texte: '2. Lien personnel' })], blocLien, [
       el('h2', { texte: '3. Mandat et bureau' }),
       el('p', { texte: 'Titulaire d\'un mandat : ' + (p.mandate ? 'oui' : 'non') + '. Membre du bureau : ' + (p.bureau ? 'oui' : 'non') + '.' }),
-      el('p', { classe: 'aide', texte: 'Un mandat ouvre les compteurs réservés et le délai de 24 heures. Le bureau ouvre le « Suivi pour le bureau ».' })
+      el('p', { classe: 'aide', texte: 'Un mandat : CSE, CSEC, CCPLU, CCPN, RP, DS ou RS. Il ouvre les compteurs réservés, le délai de 24 heures et la visite sans accompagnement. Être au bureau n\'est pas un mandat : le bureau ouvre le « Suivi pour le bureau ».' })
     ], depuis.bloc, [
       p.mandate ? statut('mandat', false, 'Mettre fin au mandat') : statut('mandat', true, 'Déclarer titulaire d\'un mandat'),
       p.bureau ? statut('bureau', false, 'Faire sortir du bureau') : statut('bureau', true, 'Faire entrer au bureau'),
