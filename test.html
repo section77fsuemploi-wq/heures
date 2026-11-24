@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="referrer" content="no-referrer">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-Dp5kxjTeyxMHEHcAXQlkwOL0d3NuzeYZXr8khV6a5lE='; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src data:; connect-src https://script.google.com https://script.googleusercontent.com; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-PzOAd2RU0rNt0ZT/zTs6ROdxitcaKcHVhrz7WSYQtw4='; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src data:; connect-src https://script.google.com https://script.googleusercontent.com; base-uri 'none'; form-action 'none'">
 <title>Heures 77, TEST</title>
 <!-- Fichier produit par outils/construire-entree.js à partir de src/html/page.html. Ne pas modifier à la main. -->
 <!-- Polices de la charte. Si le chargement échoue, Georgia et Segoe UI prennent le relais : la page reste lisible.
@@ -356,7 +356,8 @@
     return n.getFullYear() + '-' + deux(n.getMonth() + 1) + '-' + deux(n.getDate());
   }
   var LIBELLE_UTILISATION = 'Si oui, quel jour as-tu utilisé ces heures ?';
-  var AIDE_UTILISATION = 'C\'est ta déclaration, elle t\'engage. La section te fait confiance : aucune pièce n\'est demandée.';
+  // Texte sobre, voulu par Julien le 24/11/2026 : ni mise en garde, ni flatterie. On dit ce qui est demandé, et rien d'autre.
+  var AIDE_UTILISATION = 'Tu déclares toi-même la date. Aucune pièce n\'est demandée.';
   var CHAMPS = { date: 'Date', type: 'Objet', site: 'Site', chantier: 'Objet', heures: 'Nombre d\'heures', compteur: 'Compteur',
     accompagnant: 'Accompagnement', consentementTransmission: 'Accord de transmission', heureDebut: 'Heure de début' };
   var MOTIFS = {
