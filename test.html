@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="referrer" content="no-referrer">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-Yb4FjlYgyrYzqHPt1Fl5jvK1DZcV8GF+QqghZ8lB6mQ='; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src data:; connect-src https://script.google.com https://script.googleusercontent.com; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-5okVO9jNs/cCqQf1dATfT/hGwB4NFTVwp2wkgOw07hE='; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src data:; connect-src https://script.google.com https://script.googleusercontent.com; base-uri 'none'; form-action 'none'">
 <title>Heures 77, TEST</title>
 <!-- Fichier produit par outils/construire-entree.js à partir de src/html/page.html. Ne pas modifier à la main. -->
 <!-- Polices de la charte. Si le chargement échoue, Georgia et Segoe UI prennent le relais : la page reste lisible.
@@ -912,7 +912,8 @@
     var reserve = function (c) { return c.reserve === true || c.ouvert === false; };
     var optionsCompteurs = deMandat.map(function (c) {
       return { c: c, noeud: c.ouvert === false
-        ? el('option', { value: c.code, disabled: 'disabled', texte: c.libelle + ' (réservé aux titulaires de mandat)' })
+        // La liste ne se montre qu'avec un mandat à la date : l'option réservée n'a pas besoin de mention.
+        ? el('option', { value: c.code, disabled: 'disabled', texte: c.libelle })
         : option(c.code, c.libelle) };
     });
     var compteur = el('select', { id: 'compteur', 'aria-required': 'true', 'aria-describedby': 'aide-compteur' },
@@ -935,37 +936,49 @@
       fermes: 'À cette date, ton mandat sera terminé : les compteurs réservés aux titulaires de mandat ne te sont pas ouverts.',
       pasEncore: 'À cette date, tu n\'auras pas de mandat.'
     };
-    // Sans mandat aujourd'hui ni à venir : un seul compteur possible. Une phrase le dit, sans liste à une option grisée.
-    var compteurUnique = unSeul && fermes > 0 && !e.mandate && !debutMandat;
+    // Le bloc « Compteur » suit le mandat à la date choisie (au jour, sans date). Deux présentations, jamais ensemble :
+    // sans mandat à cette date, une phrase et la liste cachée (le seul compteur ouvert y est choisi) ; avec mandat, les puces
+    // et la liste. Un compteur « tous » : le premier compteur de mandat non réservé.
+    var tousMandat = deMandat.filter(function (c) { return !reserve(c); })[0] || ouverts[0] || null;
+    // Aucun mandat ni aujourd'hui ni à venir : les compteurs réservés ne s'ouvriront à aucune date.
+    var jamaisDeMandat = !e.mandate && !debutMandat;
     var aideCompteurDate = el('p', { id: 'aide-compteur-date' });
-    var aideSansMandat = fermes ? el('p', { id: 'aide-compteur-sans-mandat', texte: 'Tu vois les deux compteurs de mandat. Sans mandat, tu ne peux demander que sur « Mandats tous ».' }) : null;
     aideCompteurDate.hidden = true;
+    var labelCompteur = el('label', { for: 'compteur', texte: 'Compteur' });
     var aideCompteur = el('div', { classe: 'aide', id: 'aide-compteur' }, [
-      el('p', { texte: unSeul ? 'Un seul compteur t\'est ouvert : il est déjà choisi.' : 'La réserve d\'heures où la section prend les tiennes.' }),
+      el('p', { texte: 'La réserve d\'heures où la section prend les tiennes.' }),
       expliques.length ? el('ul', {}, expliques.map(function (c) { return el('li', { texte: '« ' + c.libelle + ' » : ' + AIDES_COMPTEURS[c.code] + '.' }); })) : null,
-      aideSansMandat,
       aideCompteurDate
     ]);
-    /** Ouvre ou ferme les compteurs réservés selon le mandat à la date choisie. Rend la phrase affichée, ou ''. */
+    // Mandat à venir : la date à partir de laquelle « Mandats élu·es » s'ouvre, dite tant que la date choisie la précède.
+    var compteurAVenir = debutMandat && reserveMandat ? el('p', { id: 'compteur-a-venir', texte: 'À partir du ' + dateFr(debutMandat) + ', début de ton mandat, tu pourras aussi choisir « ' + reserveMandat.libelle + ' ».' }) : null;
+    // Titulaire aujourd'hui dont le mandat finit avant la date choisie : la raison, avant la phrase du seul compteur.
+    var compteurMandatFini = e.mandate ? el('p', { id: 'compteur-mandat-fini', texte: 'À cette date, ton mandat sera terminé.' }) : null;
+    var sansMandatCompteur = el('div', { classe: 'aide', id: 'compteur-sans-mandat' }, [
+      compteurMandatFini,
+      el('p', { id: 'compteur-unique', texte: 'Compteur : « ' + (tousMandat ? tousMandat.libelle : 'Mandats tous') + ' ». Sans mandat, c\'est le seul qui t\'est ouvert.' }),
+      compteurAVenir
+    ]);
+    /** Ouvre ou ferme les compteurs réservés selon le mandat à la date choisie. Rend la phrase à annoncer, ou ''. */
     var majCompteurs = function () {
       var ouvre = mandatALaDate();
       optionsCompteurs.forEach(function (o) {
         if (!reserve(o.c)) return;
-        if (ouvre) {
-          o.noeud.removeAttribute('disabled');
-          o.noeud.textContent = typo(o.c.libelle);
-        } else {
-          o.noeud.setAttribute('disabled', 'disabled');
-          o.noeud.textContent = typo(o.c.libelle + ' (réservé aux titulaires de mandat)');
-          if (compteur.value === o.c.code) compteur.value = unSeul ? ouverts[0].code : '';
-        }
+        if (ouvre) o.noeud.removeAttribute('disabled');
+        else o.noeud.setAttribute('disabled', 'disabled');
       });
-      var phrase = !e.mandate && ouvre ? COMPTEURS_A_LA_DATE.ouverts : e.mandate && !ouvre ? COMPTEURS_A_LA_DATE.fermes
-        : !e.mandate && debutMandat && date.value ? COMPTEURS_A_LA_DATE.pasEncore : '';
-      // « Sans mandat… » ne vaut que pour une date sans mandat : elle s'efface quand la date en a un.
-      if (aideSansMandat) aideSansMandat.hidden = !e.mandate && ouvre;
-      aideCompteurDate.textContent = typo(phrase);
-      aideCompteurDate.hidden = !phrase;
+      // Sans mandat à la date : la liste se cache et vaut le compteur « tous », la valeur envoyée reste juste.
+      if (!ouvre && tousMandat) compteur.value = tousMandat.code;
+      labelCompteur.hidden = !ouvre;
+      aideCompteur.hidden = !ouvre;
+      compteur.hidden = !ouvre;
+      sansMandatCompteur.hidden = ouvre;
+      if (compteurAVenir) compteurAVenir.hidden = !!date.value && date.value >= debutMandat;
+      if (compteurMandatFini) compteurMandatFini.hidden = ouvre;
+      // La phrase qui accompagne un changement de date, cohérente avec la présentation affichée.
+      var phrase = !e.mandate && ouvre ? COMPTEURS_A_LA_DATE.ouverts : e.mandate && !ouvre ? COMPTEURS_A_LA_DATE.fermes : '';
+      aideCompteurDate.textContent = typo(ouvre ? phrase : '');
+      aideCompteurDate.hidden = !(ouvre && phrase);
       preChoisir();
       return phrase;
     };
@@ -1094,11 +1107,11 @@
       }, b);
     }, 'envoi');
     // Un état de réalisation attend la personne : l'espace le dit une fois, au-dessus du formulaire (vueEspace).
-    if (compteurUnique) {
-      compteur.hidden = true;
+    if (jamaisDeMandat) {
       // Aucune date ne les ouvrira : les compteurs réservés quittent la liste cachée.
-      optionsCompteurs.forEach(function (o) { if (o.c.ouvert === false) compteur.removeChild(o.noeud); });
+      optionsCompteurs.forEach(function (o) { if (reserve(o.c)) compteur.removeChild(o.noeud); });
     }
+    majCompteurs();
     return el('div', {}, [
       el('label', { for: 'date', texte: 'Date' }),
       // Le serveur donne la première date tenable : plus de calcul de tête. Sans elle, on rappelle la règle.
@@ -1109,9 +1122,7 @@
       el('label', { for: 'heures', texte: 'Nombre d\'heures' }),
       aide('aide-heures', 'Par demi-heures, ou par demi-journées de 3,75 h. Une demande couvre une journée au plus : 7,5 heures.'), nb,
       el('div', { classe: 'ligne raccourcis' }, [raccourci('Journée (7,5 h)', '7,5'), raccourci('Demi-journée (3,75 h)', '3,75')])
-    ].concat(compteurUnique ? [
-      el('p', { id: 'compteur-unique', texte: 'Tes heures vont sur le compteur « ' + ouverts[0].libelle + ' » : sans mandat, c\'est le seul qui t\'est ouvert.' }), compteur
-    ] : [el('label', { for: 'compteur', texte: 'Compteur' }), aideCompteur, compteur], [blocDeplacement,
+    ].concat([labelCompteur, aideCompteur, sansMandatCompteur, compteur], [blocDeplacement,
       el('div', { classe: 'case' }, [accord, el('label', { for: 'accord', texte: 'J\'accepte que le secrétaire procède à une cession d\'heures à mon nom, visible par le service des Relations Sociales de France Travail.' })]),
       envoyer, retour
     ]));
@@ -1716,10 +1727,11 @@
     if ((t.aClore || []).length) attend.push(pluriel(t.aClore.length, 'demande à clore', 'demandes à clore'));
     if (leves) attend.push(pluriel(leves, 'refus que tu peux lever', 'refus que tu peux lever'));
     var entree = function (libelle, cible, principal) { return el('p', {}, [bouton(libelle, function () { aller(cible); }, principal ? '' : 'second')]); };
-    // Rempli après coup, seulement si un point de l'état de l'outil ne va pas.
-    var alerteEtat = el('div');
+    // Rempli après coup (second appel), seulement si un point de l'état de l'outil ne va pas. Il vient après le dernier
+    // bouton : un contenu qui arrive après coup ne déplace jamais un bouton déjà affiché.
+    var alerteEtat = el('div', { id: 'alerte-etat' });
     page('Gérer la section', [
-      navigation(false), annonce(message), alerteEtat,
+      navigation(false), annonce(message),
       el('p', { classe: attend.length ? 'encadre' : 'encadre info', texte: attend.length ? 'Ce qui t\'attend : ' + attend.join(', ') + '.' : 'Rien ne t\'attend aujourd\'hui.' }),
       enAttente.length ? el('p', { classe: 'encadre info', texte: 'Les heures ' + anneesDe(enAttente).join(' et ') + ' ne sont pas encore saisies : ' +
         pluriel(enAttente.length, 'demande les attend', 'demandes les attendent') + '.' }) : null,
@@ -1730,6 +1742,7 @@
       entree('Chantiers (' + pluriel(m.chantiers, 'ouvert', 'ouverts') + ')', 'chantiers'),
       entree('Réglages', 'reglages'),
       entree('État de l\'outil', 'etat'),
+      alerteEtat,
       el('p', { classe: 'aide', texte: 'Chaque geste fait ici est inscrit au journal et visible du bureau. Aucun champ ne permet de commenter une personne.' })
     ]);
     // Aperçu : sans la vérification du journal, qui recalcule une empreinte par ligne. L'écran « État de l'outil » la fait.
@@ -2002,11 +2015,13 @@
    * Réponses corrigées depuis sept jours qui ont retiré une ligne à restituer (contrat A3) : la demande, la personne,
    * le jour de la correction et ce que la ligne retirée portait. Hors du compte du travail du jour.
    */
-  var CONSIGNE_CORRECTION = 'Si tu avais déjà restitué ces heures chez l\'employeur, cède-les de nouveau.';
+  // Une consigne générale, vraie quelle que soit la ligne retirée (mandat et déplacement, ou déplacement seul) :
+  // la ligne revenue peut porter plus que la ligne retirée (exemple : 2 h de déplacement retirées, 3,75 h dont 2 h revenues).
+  var CONSIGNE_CORRECTION = 'Si tu avais déjà restitué la ligne retirée chez l\'employeur, compare-la à ce qui reste à restituer aujourd\'hui pour cette demande : ne restitue que ce qui manque, cède de nouveau ce qui est en trop.';
   var CONSIGNES_CORRECTION = {
-    reponse_attendue: 'Réponse attendue. Si tu avais déjà restitué ces heures chez l\'employeur, attends la nouvelle réponse avant de rien refaire.',
-    fait: 'Nouvelle réponse : oui. Si tu avais déjà restitué ces heures chez l\'employeur, cède-les de nouveau.',
-    pas_fait: 'Nouvelle réponse : non. La ligne à restituer est revenue : si tu avais déjà restitué chez l\'employeur, note-la restituée sans rien refaire.'
+    reponse_attendue: 'Réponse attendue. Si tu avais déjà restitué la ligne retirée chez l\'employeur, attends la nouvelle réponse avant de rien refaire.',
+    fait: 'Nouvelle réponse : oui. ' + CONSIGNE_CORRECTION,
+    pas_fait: 'Nouvelle réponse : non. ' + CONSIGNE_CORRECTION
   };
   function blocCorrections(liste) {
     var porte = function (l) {
