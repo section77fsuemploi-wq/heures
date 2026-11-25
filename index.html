@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="referrer" content="no-referrer">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-YIdIs5A0Pg2lxQzf9k4bP4vc/MY7EVdETkKSchn24kg='; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src data:; connect-src https://script.google.com https://script.googleusercontent.com; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-wXNvLrX4opOjnRRH3zLN8ZB5mQAmDYgFAZN4+k9P+K4='; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src data:; connect-src https://script.google.com https://script.googleusercontent.com; base-uri 'none'; form-action 'none'">
 <title>Heures 77</title>
 <!-- Fichier produit par outils/construire-entree.js à partir de src/html/page.html. Ne pas modifier à la main. -->
 <!-- Polices de la charte. Si le chargement échoue, Georgia et Segoe UI prennent le relais : la page reste lisible.
@@ -149,7 +149,7 @@
 // Tout ce que la page doit savoir se lit après le « # » : cette partie de l'adresse ne part jamais vers l'hébergeur.
 (function () {
   'use strict';
-  var EXEC = "https://script.google.com/macros/s/AKfycbxrMezLrxAHMrG_GU1Osa-tLshxGHBr7xdxBqcNxZe9l6isF4a5SeFSM45ggbDYu5RzUg/exec", VERSION = "0.13.0", TEST = false;
+  var EXEC = "https://script.google.com/macros/s/AKfycbxrMezLrxAHMrG_GU1Osa-tLshxGHBr7xdxBqcNxZe9l6isF4a5SeFSM45ggbDYu5RzUg/exec", VERSION = "0.14.0", TEST = false;
   var app = document.getElementById('app');
   function lire(texte) {
     var lu = Object.create(null);
@@ -360,6 +360,17 @@
     var deux = function (x) { return (x < 10 ? '0' : '') + x; };
     return n.getFullYear() + '-' + deux(n.getMonth() + 1) + '-' + deux(n.getDate());
   }
+  /**
+   * « Heures de déplacement utilisées », prérempli avec les heures de déplacement de la demande (version 0.14.0).
+   * Aucune phrase ne demande pourquoi : la personne dit ce qu'elle a utilisé, la case d'attestation le couvre.
+   */
+  function champDeplacementUtilise(suffixe, prevu) {
+    var nombre = String(prevu).replace('.', ',');
+    var saisie = el('input', { type: 'text', id: 'deplacement-utilise' + suffixe, inputmode: 'decimal', autocomplete: 'off', value: nombre, 'aria-describedby': 'aide-deplacement-utilise' + suffixe });
+    saisie.value = nombre;
+    return { saisie: saisie, bloc: [el('label', { for: 'deplacement-utilise' + suffixe, texte: 'Heures de déplacement utilisées' }),
+      aide('aide-deplacement-utilise' + suffixe, 'Laisse ' + nombre + ' si tu as fait le trajet prévu. Mets 0 si tu ne t\'es pas déplacé·e.'), saisie] };
+  }
   var LIBELLE_UTILISATION = 'Si oui, quel jour as-tu utilisé ces heures ?';
   // Texte sobre, voulu par Julien le 24/11/2026 : ni mise en garde, ni flatterie. On dit ce qui est demandé, et rien d'autre.
   var AIDE_UTILISATION = 'Tu déclares toi-même la date. Aucune pièce n\'est demandée.';
@@ -390,6 +401,8 @@
     hors_delai: 'Le délai d\'un mois est passé.', contestation_deja_ouverte: 'Une contestation est déjà ouverte.',
     contestation_deja_tranchee: 'Le bureau a déjà tranché sur ce point.', annee_close: 'Les heures de cette année n\'existent plus : ce geste ne se saisit plus.', contestation_ouverte: 'Une contestation est ouverte sur cette demande : la décision du bureau d\'abord.',
     attestation_manquante: 'Coche la case d\'attestation.',
+    deplacement_utilise: 'Indique les heures de déplacement utilisées, par demi-heures, entre 0 et les heures prévues.',
+    deplacement_deja_declare: 'Ton déplacement est déjà déclaré.',
     heures_couvertes: 'Les heures reçues couvrent cette demande : il n\'y a pas de refus à noter.',
     annee_ouverte: 'Les heures de cette année existent encore : la ligne se règle par la restitution.', etat_de_la_personne: 'Cet état vient de toi : il n\'y a rien à contester.',
     fiche_active: 'Cette fiche est active : la personne peut encore répondre.',
@@ -668,11 +681,17 @@
       var mot = el('textarea', { id: 'mot', maxlength: String(r.commentaireMax), 'aria-describedby': 'aide-mot' });
       var utilise = r.dateUtilisationAttendue ? el('input', { type: 'date', id: 'utilise', max: aujourdhuiIso(), 'aria-describedby': 'aide-utilise' }) : null;
       var atteste = el('input', { type: 'checkbox', id: 'attestation', 'aria-required': 'true' });
+      // Une page servie par un serveur plus ancien n'envoie pas deplacementPrevu : pas de champ, comme avant.
+      var depUtilise = r.deplacementPrevu > 0 ? champDeplacementUtilise('', r.deplacementPrevu) : null;
       var repondre = function (valeur) {
         return function (b) {
           if (valeur === 'fait' && utilise && !utilise.value) return vider(retour).appendChild(erreur(ERREURS.date_utilisation_manquante));
           if (!atteste.checked) return vider(retour).appendChild(erreur(ERREURS.attestation_manquante));
-          appel('api_declarerEtat', [JETON, valeur, mot.value, valeur === 'fait' && utilise ? dateFr(utilise.value) : '', atteste.checked === true], function (c) {
+          // Le champ affiché ne se laisse pas vide : sans lui, le serveur compterait le déplacement utilisé en entier.
+          if (valeur === 'fait' && depUtilise && !String(depUtilise.saisie.value || '').trim()) return vider(retour).appendChild(erreur(ERREURS.deplacement_utilise));
+          var args = [JETON, valeur, mot.value, valeur === 'fait' && utilise ? dateFr(utilise.value) : '', atteste.checked === true];
+          if (valeur === 'fait' && depUtilise) args.push(depUtilise.saisie.value);
+          appel('api_declarerEtat', args, function (c) {
             if (!c.ok) return dire(retour, c);
             if (c.sansEffet) return dejaTraite(c);
             fini('C\'est noté', 'Demande ' + d.id + ' : ' + (c.valeur === 'fait' ? 'elle a eu lieu.' : 'elle n\'a pas eu lieu.'), 'reussite');
@@ -687,11 +706,11 @@
         mot,
         utilise ? el('label', { for: 'utilise', texte: LIBELLE_UTILISATION }) : null,
         utilise ? aide('aide-utilise', AIDE_UTILISATION) : null,
-        utilise,
+        utilise].concat(depUtilise ? depUtilise.bloc : [], [
         el('div', { classe: 'case' }, [atteste, el('label', { for: 'attestation', texte: 'J\'atteste que ma déclaration est exacte.' })]),
         bouton('Oui, elle a eu lieu', repondre('fait')),
         bouton('Non, elle n\'a pas eu lieu', repondre('pas_fait')),
-        retour]);
+        retour]));
     });
   }
 
@@ -814,7 +833,7 @@
     nb.addEventListener('change', majAlerte);
     var blocDeplacement = deDeplacement.length ? el('div', { id: 'bloc-deplacement' }, [
       el('label', { for: 'heures-deplacement', texte: 'Dont heures de déplacement' }),
-      aide('aide-heures-deplacement', 'Pour une note de frais. Par demi-heures. Elles sont comprises dans tes heures de mandat. Exemple : 1 h à l\'aller et 1 h au retour, 2 h.'),
+      aide('aide-heures-deplacement', 'Pour une note de frais. Par demi-heures. Elles sont comprises dans tes heures de mandat. Exemple : 1 h à l\'aller et 1 h au retour, 2 h. Si tu n\'as besoin que du trajet, demande autant d\'heures de mandat que de déplacement. Exemple : 2 h, dont 2 h.'),
       nbDeplacement, alerteDeplacement, aideDeplacementTous, blocCompteurDeplacement
     ]) : null;
     majDeplacement();
@@ -961,6 +980,7 @@
       lignes.push(el('p', { classe: 'encadre info', texte: 'Les heures sont cédées. Saisis ta demande d\'absence dans Horoquartz, sur ton propre compte.' }));
     }
     if (d.utiliseLe) lignes.push(el('p', { texte: 'Heures utilisées le ' + d.utiliseLe + ', d\'après ta déclaration.' }));
+    if (typeof d.deplacementUtilise === 'number') lignes.push(el('p', { texte: 'Déplacement utilisé : ' + heures(d.deplacementUtilise) + ' sur ' + heures(d.heuresDeplacement) + ', d\'après ta déclaration.' }));
     if (d.reports) lignes.push(el('p', { texte: 'Date déjà changée.' }));
     // Le refus contesté a été levé entre-temps : la contestation n'a plus d'objet. Si un nouveau refus
     // est venu ensuite, la phrase serait fausse : on ne l'écrit pas, et le bouton suit le serveur.
@@ -985,22 +1005,45 @@
       var cleNon = cleUnique();
       var atteste = el('input', { type: 'checkbox', id: 'attestation-' + d.id, 'aria-required': 'true' });
       var commentaire = el('textarea', { id: 'commentaire-' + d.id, maxlength: String(COMMENTAIRE_MAX), 'aria-describedby': 'aide-commentaire-' + d.id });
+      var depOui = d.deplacementPrevu > 0 ? champDeplacementUtilise('-' + d.id, d.deplacementPrevu) : null;
       lignes.push(el('p', { classe: 'encadre', texte: 'À faire : cette activité a-t-elle eu lieu ?' }),
         el('label', { for: 'utilise-' + d.id, texte: LIBELLE_UTILISATION }),
-        aide('aide-utilise-' + d.id, AIDE_UTILISATION), utilise,
+        aide('aide-utilise-' + d.id, AIDE_UTILISATION), utilise);
+      if (depOui) lignes.push.apply(lignes, depOui.bloc);
+      lignes.push(
         el('label', { for: 'commentaire-' + d.id, texte: 'Commentaire (facultatif)' }),
         aide('aide-commentaire-' + d.id, 'Ne nomme personne, n\'écris rien sur la santé ou la vie privée. ' + COMMENTAIRE_MAX + ' caractères au plus.'),
         commentaire,
         el('div', { classe: 'case' }, [atteste, el('label', { for: 'attestation-' + d.id, texte: 'J\'atteste que ma déclaration est exacte.' })]),
         bouton('Oui, elle a eu lieu', function (b) {
           if (!utilise.value) return vider(retour).appendChild(erreur(ERREURS.date_utilisation_manquante));
+          if (depOui && !String(depOui.saisie.value || '').trim()) return vider(retour).appendChild(erreur(ERREURS.deplacement_utilise));
           if (!atteste.checked) return vider(retour).appendChild(erreur(ERREURS.attestation_manquante));
-          agir('api_declarerEtatEspace', function () { return [JETON, d.id, 'fait', commentaire.value, cleOui, dateFr(utilise.value), atteste.checked === true]; }, 'C\'est noté : elle a eu lieu.')(b);
+          agir('api_declarerEtatEspace', function () {
+            var args = [JETON, d.id, 'fait', commentaire.value, cleOui, dateFr(utilise.value), atteste.checked === true];
+            if (depOui) args.push(depOui.saisie.value);
+            return args;
+          }, 'C\'est noté : elle a eu lieu.')(b);
         }, '', 'Oui, elle a eu lieu, demande ' + d.id),
         bouton('Non, elle n\'a pas eu lieu', function (b) {
           if (!atteste.checked) return vider(retour).appendChild(erreur(ERREURS.attestation_manquante));
           agir('api_declarerEtatEspace', function () { return [JETON, d.id, 'pas_fait', commentaire.value, cleNon, '', atteste.checked === true]; }, 'C\'est noté : elle n\'a pas eu lieu.')(b);
         }, '', 'Non, elle n\'a pas eu lieu, demande ' + d.id));
+    }
+    if (a.declarerDeplacement) {
+      var depApres = champDeplacementUtilise('-apres-' + d.id, d.deplacementPrevu || d.heuresDeplacement);
+      var attesteDep = el('input', { type: 'checkbox', id: 'attestation-deplacement-' + d.id, 'aria-required': 'true' });
+      var cleDep = cleUnique();
+      var blocDep = el('div', {}, depApres.bloc.concat([
+        el('div', { classe: 'case' }, [attesteDep, el('label', { for: 'attestation-deplacement-' + d.id, texte: 'J\'atteste que ma déclaration est exacte.' })]),
+        bouton('Enregistrer mon déplacement', function (b) {
+          if (!String(depApres.saisie.value || '').trim()) return vider(retour).appendChild(erreur(ERREURS.deplacement_utilise));
+          if (!attesteDep.checked) return vider(retour).appendChild(erreur(ERREURS.attestation_manquante));
+          agir('api_declarerDeplacement', function () { return [JETON, d.id, depApres.saisie.value, attesteDep.checked === true, cleDep]; }, 'C\'est noté : ton déplacement est enregistré.')(b);
+        }, '', 'Enregistrer mon déplacement, demande ' + d.id)
+      ]));
+      blocDep.hidden = true;
+      lignes.push(bouton('Déclarer mon déplacement', function (b) { blocDep.hidden = false; b.remove(); depApres.saisie.focus(); }, 'second', 'Déclarer mon déplacement, demande ' + d.id), blocDep);
     }
     if (a.reporter) {
       var nouvelle = el('input', { type: 'date', id: 'report-' + d.id, max: d.exercice ? d.exercice + '-12-31' : null });
@@ -1145,6 +1188,8 @@
   };
   /** Une annulation dit ce qu'elle annule quand le serveur le sait. */
   function libelleGeste(a) {
+    // Le déplacement non utilisé seul : un libellé propre, tiré de la part (version 0.14.0).
+    if (a.part === 'deplacement') return a.type === 'SAISIE_RESTITUTION' ? 'Restitution du déplacement non utilisé' : (GESTES[a.type] || a.type) + ', déplacement non utilisé';
     if (a.type === 'CORRECTION' && ANNULATIONS[a.cible]) return ANNULATIONS[a.cible];
     if (a.type === 'REFUS_MANUEL' && a.motif === 'R5') return 'Refus : plus d\'heures';
     if (a.type === 'ABSENCE_DEJA_POSEE' && a.motif === 'annee_close') return 'Ligne classée : année close, rien à restituer';
@@ -1481,7 +1526,7 @@
     };
     var decrire = function (l) {
       return [el('p', { classe: 'num', texte: l.personne + ', le ' + l.date }),
-        el('p', { texte: heures(l.heures) + ' sur « ' + l.compteur + ' »' + partDeplacement(l) + '. ' + l.libelle + '. Demande ' + l.demande + ', ' + depuis(l) + '.' + annee(l) }),
+        el('p', { texte: (l.part === 'deplacement' ? heures(l.heures) + ' de déplacement sur « ' + l.compteur + ' »' : heures(l.heures) + ' sur « ' + l.compteur + ' »' + partDeplacement(l)) + '. ' + l.libelle + '. Demande ' + l.demande + ', ' + depuis(l) + '.' + annee(l) }),
         l.auDelaDesHeures ? el('p', { classe: 'encadre info', texte: 'Au-delà des heures reçues. À toi de décider.' }) : null];
     };
 
@@ -1504,20 +1549,24 @@
     var aSaisir = t.aSaisir.filter(function (l) { return !l.attenteHeures; }).map(carteSaisie);
     var attenteHeures = t.aSaisir.filter(function (l) { return l.attenteHeures; });
     var carteRestitution = function (l) {
+      // Heures de déplacement non utilisées (version 0.14.0) : les mêmes gestes, sur cette part seulement.
+      var dep = l.part === 'deplacement';
+      var nature = function (n) { return dep ? n + '_deplacement' : n; };
+      var nomGeste = function (n) { return n + (dep ? ', déplacement non utilisé' : '') + ', demande ' + l.demande; };
       // Année close : les heures n\'existent plus chez l\'employeur. Un seul geste classe la ligne, sans dire « fait » ni « pas fait ».
       // Tant qu\'une contestation est ouverte sur la demande, le bureau décide d\'abord.
       if (l.anneeClose) {
         return el('div', { classe: 'carte' }, decrire(l).concat([
           el('p', { texte: 'Les heures ' + l.exercice + ' n\'existent plus depuis le 31/12 : il n\'y a rien à restituer.' }),
-          l.contestee ? el('p', { classe: 'aide', texte: 'Une contestation est ouverte sur cette demande : la décision du bureau d\'abord.' }) : deuxTemps('Classer : année close, rien à restituer', fait('api_saisir', [l.demande, 'classement'], l.demande + ' : ligne classée, année close.'),
-            { classe: '', nom: 'Classer : année close, rien à restituer, demande ' + l.demande })]));
+          l.contestee ? el('p', { classe: 'aide', texte: 'Une contestation est ouverte sur cette demande : la décision du bureau d\'abord.' }) : deuxTemps('Classer : année close, rien à restituer', fait('api_saisir', [l.demande, nature('classement')], l.demande + ' : ligne classée, année close.'),
+            { classe: '', nom: nomGeste('Classer : année close, rien à restituer') })]));
       }
       return el('div', { classe: 'carte' }, decrire(l).concat([
         l.origine === 'close' ? el('p', { texte: 'Demande close sans réponse : la fiche est désactivée.' }) : null,
-        l.contestee ? el('p', { classe: 'aide', texte: 'Une contestation est ouverte sur cette demande : la décision du bureau d\'abord.' }) : deuxTemps('J\'ai fait la restitution chez l\'employeur', fait('api_saisir', [l.demande, 'restitution'], l.demande + ' : restitution faite, c\'est noté.'),
-          { classe: '', nom: 'J\'ai fait la restitution chez l\'employeur, demande ' + l.demande }),
-        l.contestee ? null : deuxTemps('Rien à restituer : l\'absence était déjà posée', fait('api_saisir', [l.demande, 'absence_deja_posee'], l.demande + ' : heures consommées, c\'est noté.'),
-          { nom: 'Rien à restituer : l\'absence était déjà posée, demande ' + l.demande })]));
+        l.contestee ? el('p', { classe: 'aide', texte: 'Une contestation est ouverte sur cette demande : la décision du bureau d\'abord.' }) : deuxTemps('J\'ai fait la restitution chez l\'employeur', fait('api_saisir', [l.demande, nature('restitution')], l.demande + ' : restitution faite, c\'est noté.'),
+          { classe: '', nom: nomGeste('J\'ai fait la restitution chez l\'employeur') }),
+        l.contestee ? null : deuxTemps('Rien à restituer : l\'absence était déjà posée', fait('api_saisir', [l.demande, nature('absence_deja_posee')], l.demande + ' : heures consommées, c\'est noté.'),
+          { nom: nomGeste('Rien à restituer : l\'absence était déjà posée') })]));
     };
     var aClasser = t.aRestituer.filter(function (l) { return l.anneeClose; }).map(carteRestitution);
     var aRestituer = t.aRestituer.filter(function (l) { return !l.anneeClose; }).map(carteRestitution);
@@ -1563,7 +1612,7 @@
         return bloc(attenteHeures.filter(function (l) { return l.exercice === a; }).map(carteSaisie), 'En attente des heures ' + a,
           'Ces demandes sont confirmées et comptent sur ' + a + '. Tu cèdes les heures une fois les heures ' + a + ' reçues et saisies ici.');
       })),
-      bloc(aRestituer, 'Heures à restituer chez l\'employeur', 'Une activité annulée, qui n\'a pas eu lieu, ou une demande close sans réponse : les heures reviennent à la section si l\'absence n\'a pas été posée.'),
+      bloc(aRestituer, 'Heures à restituer chez l\'employeur', 'Une activité annulée, qui n\'a pas eu lieu, ou une demande close sans réponse : les heures reviennent à la section si l\'absence n\'a pas été posée. Une activité qui a eu lieu avec moins de déplacement que prévu : seules les heures de déplacement non utilisées reviennent.'),
       bloc(aClasser, 'Lignes à classer, année close', 'Les heures de cette année n\'existent plus : il n\'y a rien à restituer. Classer ferme la ligne, sans dire « fait » ni « pas fait ».'),
       bloc(aClore, 'Demandes à clore sans réponse', 'La fiche de la personne est désactivée : elle ne peut plus répondre. Tu ne réponds pas à sa place. Clore ne dit ni « fait » ni « pas fait » : une demande cédée passe dans « Heures à restituer chez l\'employeur ».'),
       bloc(aCloreAnnee, 'Demandes d\'une année close, à clore', 'Les heures de cette année n\'existent plus et la cession n\'a pas été saisie. Clore ferme la demande : tu ne déclares rien, elle ne dit ni « fait » ni « pas fait ».'),
