@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="referrer" content="no-referrer">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-TwaRWg96UFQsbyVd0LaQRndaMdUdHlM4Gu8L9v2NIeg='; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src data:; connect-src https://script.google.com https://script.googleusercontent.com; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-3t89hyKY22rI3QhzdqbCYUwjjHtP1dquU/yeGNKeans='; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src data:; connect-src https://script.google.com https://script.googleusercontent.com; base-uri 'none'; form-action 'none'">
 <title>Heures 77, TEST</title>
 <!-- Fichier produit par outils/construire-entree.js à partir de src/html/page.html. Ne pas modifier à la main. -->
 <!-- Polices de la charte. Si le chargement échoue, Georgia et Segoe UI prennent le relais : la page reste lisible.
@@ -149,7 +149,7 @@
 // Tout ce que la page doit savoir se lit après le « # » : cette partie de l'adresse ne part jamais vers l'hébergeur.
 (function () {
   'use strict';
-  var EXEC = "https://script.google.com/macros/s/AKfycbwGIGtDPT4hZvmjWE4v0VTvr8CGE3DHLxsvrPaEQBEK-otXtV1BeVVDIhSSlu2EEZGK/exec", VERSION = "0.12.2", TEST = true;
+  var EXEC = "https://script.google.com/macros/s/AKfycbwGIGtDPT4hZvmjWE4v0VTvr8CGE3DHLxsvrPaEQBEK-otXtV1BeVVDIhSSlu2EEZGK/exec", VERSION = "0.13.0", TEST = true;
   var app = document.getElementById('app');
   function lire(texte) {
     var lu = Object.create(null);
@@ -364,13 +364,15 @@
   // Texte sobre, voulu par Julien le 24/11/2026 : ni mise en garde, ni flatterie. On dit ce qui est demandé, et rien d'autre.
   var AIDE_UTILISATION = 'Tu déclares toi-même la date. Aucune pièce n\'est demandée.';
   var CHAMPS = { date: 'Date', type: 'Objet', site: 'Site', chantier: 'Objet', heures: 'Nombre d\'heures', compteur: 'Compteur',
+    heuresDeplacement: 'Dont heures de déplacement', compteurDeplacement: 'Compteur de déplacement',
     accompagnant: 'Accompagnement', consentementTransmission: 'Accord de cession', heureDebut: 'Heure de début' };
   var MOTIFS = {
     manquant: 'à renseigner', format: 'valeur illisible', hors_liste: 'valeur hors liste', jour_non_ouvre: 'choisis un jour de semaine, hors jours fériés',
     non_ouvert: 'ce chantier n\'est pas ouvert', pas_non_admis: 'par demi-heures, ou par demi-journées de 3,75 h',
     reserve_aux_titulaires_de_mandat: 'compteur réservé aux titulaires de mandat',
     visite_sans_titulaire_de_mandat: 'sans mandat, on ne visite jamais seul·e : nomme la personne qui t\'accompagne',
-    sans_mandat_a_la_date: 'cette personne n\'a pas de mandat à la date de la visite', soi_meme: 'tu ne peux pas t\'accompagner toi-même'
+    sans_mandat_a_la_date: 'cette personne n\'a pas de mandat à la date de la visite', soi_meme: 'tu ne peux pas t\'accompagner toi-même',
+    au_dela_du_mandat: 'pas plus que les heures de mandat'
   };
   /** Les points en cause d'une demande, champ et motif : les mêmes mots au dépôt et à la confirmation. */
   function pointsEnCause(erreurs) {
@@ -411,6 +413,7 @@
     restitution_a_annuler: 'Des heures de ce compteur ont été rendues à la région. Annule d\'abord la ligne des heures rendues à la région, plus bas, puis cet ajout.', parametre: 'Réglage non modifiable.', inchange: 'La valeur est déjà celle-là.', nature: 'Geste inconnu.',
     trop_de_demandes: 'Dix demandes par jour, pas plus. Reviens demain.',
     heures_max: 'Une demande couvre une journée au plus : 7,5 heures.',
+    deplacement_au_dela: 'Pour utiliser des heures de déplacement, il faut au moins autant d\'heures de mandat.',
     date_lointaine: 'Cette date est trop lointaine : une demande se dépose pour cette année ou la suivante.',
     exercice: 'Année non admise.', exercice_clos: 'Cette année est close : ses heures ne se rendent plus.'
   };
@@ -506,7 +509,7 @@
     return b;
   }
   function option(valeur, libelle) { return el('option', { value: valeur, texte: libelle }); }
-  function resume(d) { return d.objet + (d.site ? ', ' + d.site : '') + ', le ' + d.dateFr + ', ' + heures(d.heures) + ', compteur « ' + d.compteur + ' »'; }
+  function resume(d) { return d.objet + (d.site ? ', ' + d.site : '') + ', le ' + d.dateFr + ', ' + heures(d.heures) + ', compteur « ' + d.compteur + ' »' + partDeplacement(d); }
   var FIN_DE_PAGE = 'Pour suivre ta demande, ouvre le mail « [Heures 77] Ton lien personnel ». Tu peux fermer cette page.';
 
   /** Un texte mot par mot : il passe à la ligne entre deux mots, jamais au milieu d'un nom. */
@@ -545,10 +548,18 @@
   /** Ce qu'est chaque compteur, dit à la personne qui remplit le formulaire. */
   var AIDES_COMPTEURS = {
     MT: 'le temps de l\'activité elle-même (visite, réunion, travail sur un texte)',
-    ME: 'le temps de l\'activité, sur la part réservée aux titulaires de mandat',
-    DT: 'le temps de trajet, pour une note de frais. Chaque heure de déplacement demande aussi une heure de mandat le même jour',
-    DE: 'le temps de trajet, pour une note de frais, sur la part réservée aux titulaires de mandat. Chaque heure de déplacement demande aussi une heure de mandat le même jour'
+    ME: 'le temps de l\'activité, sur la part réservée aux titulaires de mandat'
   };
+  /** Ce qu'est chaque compteur de déplacement, dit sous le champ « Dont heures de déplacement ». */
+  var AIDES_DEPLACEMENTS = {
+    DT: 'la part ouverte à tout le monde',
+    DE: 'la part réservée aux titulaires de mandat'
+  };
+  var ALERTE_DEPLACEMENT = 'Pour utiliser des heures de déplacement, il faut au moins autant d\'heures de mandat.';
+  /** « 7,5 h sur « Mandats élu·es », dont 2 h de déplacement sur « Déplacements tous » » : les deux parts d'un coup d'œil. */
+  function partDeplacement(d) {
+    return d.heuresDeplacement ? ', dont ' + heures(d.heuresDeplacement) + ' de déplacement sur « ' + d.compteurDeplacement + ' »' : '';
+  }
 
   // ------------------------------------------------------------------ accueil
   /** Ouvre la page « lien perdu » : sur la page d'entrée, par le « # » ; sur Google, dans la fenêtre entière. */
@@ -623,7 +634,7 @@
             if (c.resultat === 'valide') {
               // Sans heure reçue sur l'année de la demande, la confirmation dit la réserve au lieu de promettre la cession.
               return fini('C\'est confirmé', 'Demande ' + d.id + ' confirmée. ' + (c.attenteHeures && c.exercice ? phraseReserve(c.exercice) + ' Quand tu les as reçues, saisis ta demande d\'absence sur ton propre compte.'
-                : 'Le secrétaire va te céder les heures chez France Travail. Quand tu les as reçues, saisis ta demande d\'absence sur ton propre compte.'), 'reussite',
+                : 'Le secrétaire va te céder les heures. Quand tu les as reçues, saisis ta demande d\'absence sur ton propre compte.'), 'reussite',
                 c.refusNonOppose ? [el('p', { classe: 'encadre info', texte: phraseEssai(c.refusNonOppose, 'ta demande', r.dateEffet, r.confirmationHeures) })] : []);
             }
             var refus = 'La demande ' + d.id + ' est refusée. ' + phraseRefus(c.refus);
@@ -700,11 +711,14 @@
     var nb = el('input', { type: 'text', id: 'heures', inputmode: 'decimal', autocomplete: 'off', 'aria-required': 'true', 'aria-describedby': 'aide-heures' });
     // Un seul compteur ouvert à la personne : il est déjà choisi, elle n'a pas à deviner.
     // Un serveur ancien n'envoie pas « ouvert » : il n'envoyait que les compteurs ouverts. Ni « reserve » : un compteur fermé au jour est alors réservé.
-    var ouverts = e.compteurs.filter(function (c) { return c.ouvert !== false; });
-    var fermes = e.compteurs.length - ouverts.length;
+    // Les compteurs de mandat seulement (version 0.13.0). Un serveur ancien n'envoie pas « deplacement » : tous sont alors de mandat.
+    var deMandat = e.compteurs.filter(function (c) { return c.deplacement !== true; });
+    var deDeplacement = e.compteurs.filter(function (c) { return c.deplacement === true; });
+    var ouverts = deMandat.filter(function (c) { return c.ouvert !== false; });
+    var fermes = deMandat.length - ouverts.length;
     var unSeul = ouverts.length === 1;
     var reserve = function (c) { return c.reserve === true || c.ouvert === false; };
-    var optionsCompteurs = e.compteurs.map(function (c) {
+    var optionsCompteurs = deMandat.map(function (c) {
       return { c: c, noeud: c.ouvert === false
         ? el('option', { value: c.code, disabled: 'disabled', texte: c.libelle + ' (réservé aux titulaires de mandat)' })
         : option(c.code, c.libelle) };
@@ -712,7 +726,7 @@
     var compteur = el('select', { id: 'compteur', 'aria-required': 'true', 'aria-describedby': 'aide-compteur' },
       (unSeul ? [] : [option('', 'Choisir')]).concat(optionsCompteurs.map(function (o) { return o.noeud; })));
     if (unSeul) compteur.value = ouverts[0].code;
-    var expliques = e.compteurs.filter(function (c) { return AIDES_COMPTEURS[c.code]; });
+    var expliques = deMandat.filter(function (c) { return AIDES_COMPTEURS[c.code]; });
     // La date choisie ouvre ou ferme les compteurs réservés : une phrase dit pourquoi.
     var COMPTEURS_A_LA_DATE = {
       ouverts: 'À cette date, tu auras un mandat : les compteurs réservés aux titulaires de mandat te sont ouverts.',
@@ -720,7 +734,7 @@
       pasEncore: 'À cette date, tu n\'auras pas de mandat.'
     };
     var aideCompteurDate = el('p', { id: 'aide-compteur-date' });
-    var aideSansMandat = fermes ? el('p', { id: 'aide-compteur-sans-mandat', texte: 'Tu vois les quatre compteurs. Sans mandat, tu ne peux demander que sur les compteurs « tous ».' }) : null;
+    var aideSansMandat = fermes ? el('p', { id: 'aide-compteur-sans-mandat', texte: 'Tu vois les deux compteurs de mandat. Sans mandat, tu ne peux demander que sur « Mandats tous ».' }) : null;
     aideCompteurDate.hidden = true;
     var aideCompteur = el('div', { classe: 'aide', id: 'aide-compteur' }, [
       el('p', { texte: unSeul ? 'Un seul compteur t\'est ouvert : il est déjà choisi.' : 'La réserve d\'heures où la section prend les tiennes.' }),
@@ -750,6 +764,46 @@
       aideCompteurDate.hidden = !phrase;
       return phrase;
     };
+    // Heures de déplacement comprises dans les heures de mandat : un champ facultatif, et pour une personne avec mandat
+    // à la date choisie, le choix du compteur de déplacement. Sans mandat, c'est « Déplacements tous ».
+    var nbDeplacement = el('input', { type: 'text', id: 'heures-deplacement', inputmode: 'decimal', autocomplete: 'off', 'aria-describedby': 'aide-heures-deplacement' });
+    var tousDeplacement = deDeplacement.filter(function (c) { return !reserve(c); })[0] || null;
+    var compteurDeplacement = el('select', { id: 'compteur-deplacement', 'aria-describedby': 'aide-compteur-deplacement' }, deDeplacement.map(function (c) { return option(c.code, c.libelle); }));
+    if (tousDeplacement) compteurDeplacement.value = tousDeplacement.code;
+    var blocCompteurDeplacement = el('div', { id: 'bloc-compteur-deplacement' }, [
+      el('label', { for: 'compteur-deplacement', texte: 'Compteur de déplacement' }),
+      el('div', { classe: 'aide', id: 'aide-compteur-deplacement' }, [el('ul', {}, deDeplacement.filter(function (c) { return AIDES_DEPLACEMENTS[c.code]; }).map(function (c) {
+        return el('li', { texte: '« ' + c.libelle + ' » : ' + AIDES_DEPLACEMENTS[c.code] + '.' });
+      }))]),
+      compteurDeplacement
+    ]);
+    var aideDeplacementTous = el('p', { classe: 'aide', id: 'aide-deplacement-tous', texte: 'Sans mandat à cette date, tes heures de déplacement vont sur « ' + (tousDeplacement ? tousDeplacement.libelle : 'Déplacements tous') + ' ».' });
+    var alerteDeplacement = el('p', { classe: 'encadre', id: 'alerte-deplacement', role: 'status', texte: ALERTE_DEPLACEMENT });
+    alerteDeplacement.hidden = true;
+    /** Le compteur de déplacement suit la date choisie, comme les compteurs de mandat. */
+    var majDeplacement = function () {
+      var ouvre = mandatALaDate();
+      blocCompteurDeplacement.hidden = !ouvre;
+      aideDeplacementTous.hidden = ouvre || !deDeplacement.length;
+      if (!ouvre && tousDeplacement) compteurDeplacement.value = tousDeplacement.code;
+    };
+    /** L'alerte s'affiche dès la saisie, quand le déplacement dépasse le mandat. */
+    var lireNombre = function (v) { var x = String(v || '').trim().replace(',', '.'); return /^\d+(\.\d+)?$/.test(x) ? parseFloat(x) : null; };
+    var majAlerte = function () {
+      var hd = lireNombre(nbDeplacement.value);
+      var hm = lireNombre(nb.value);
+      alerteDeplacement.hidden = !(hd !== null && hd > 0 && (hm === null || hd > hm));
+    };
+    nbDeplacement.addEventListener('input', majAlerte);
+    nbDeplacement.addEventListener('change', majAlerte);
+    nb.addEventListener('input', majAlerte);
+    nb.addEventListener('change', majAlerte);
+    var blocDeplacement = deDeplacement.length ? el('div', { id: 'bloc-deplacement' }, [
+      el('label', { for: 'heures-deplacement', texte: 'Dont heures de déplacement' }),
+      aide('aide-heures-deplacement', 'Pour une note de frais. Par demi-heures. Elles sont comprises dans tes heures de mandat. Exemple : 1 h à l\'aller et 1 h au retour, 2 h.'),
+      nbDeplacement, alerteDeplacement, aideDeplacementTous, blocCompteurDeplacement
+    ]) : null;
+    majDeplacement();
     var accord = el('input', { type: 'checkbox', id: 'accord', 'aria-required': 'true' });
     // Seule une personne sans mandat à la date de la visite doit être accompagnée. Avec un mandat qui la couvre, on ne nomme personne.
     var aideMandat = e.mandate || debutMandat ? el('p', { classe: 'aide', id: 'aide-mandat', texte: e.mandate
@@ -791,6 +845,7 @@
       var etaitCache = blocAccompagnant ? blocAccompagnant.hidden : true;
       var phraseAvant = aideCompteurDate.hidden ? '' : aideCompteurDate.textContent;
       montrer();
+      majDeplacement();
       var phrase = majCompteurs();
       if (blocAccompagnant && !blocVisite.hidden && etaitCache && !blocAccompagnant.hidden) annoncer('Un champ apparaît : « Titulaire de mandat qui t\'accompagne ».');
       else if (phrase && typo(phrase) !== phraseAvant) annoncer(phrase);
@@ -799,7 +854,10 @@
     date.addEventListener('input', suivreDate);
     var retour = el('div');
     var envoyer = bouton('Envoyer la demande', function (b) {
+      var avecDeplacement = String(nbDeplacement.value || '').trim() !== '';
       var f = { date: dateFr(date.value), objet: objet.value, site: site.value, heures: nb.value, compteur: compteur.value,
+        heuresDeplacement: avecDeplacement ? nbDeplacement.value : '',
+        compteurDeplacement: avecDeplacement ? (mandatALaDate() ? compteurDeplacement.value : (tousDeplacement ? tousDeplacement.code : '')) : '',
         accompagnant: objet.value === 'visite' && accompagnant && accompagnee() ? accompagnant.value : '', consentement: accord.checked };
       appel('api_deposer', [JETON, f, cle], function (r) {
         vider(retour);
@@ -831,7 +889,7 @@
       el('label', { for: 'objet', texte: 'Objet' }), objet, blocVisite,
       el('label', { for: 'heures', texte: 'Nombre d\'heures' }),
       aide('aide-heures', 'Par demi-heures, ou par demi-journées de 3,75 h. Exemple : 7,5. Une demande couvre une journée au plus : 7,5 heures.'), nb,
-      el('label', { for: 'compteur', texte: 'Compteur' }), aideCompteur, compteur,
+      el('label', { for: 'compteur', texte: 'Compteur' }), aideCompteur, compteur, blocDeplacement,
       el('div', { classe: 'case' }, [accord, el('label', { for: 'accord', texte: 'J\'accepte que le secrétaire procède à une cession d\'heures à mon nom, visible par le service des Relations Sociales de France Travail.' })]),
       envoyer, retour
     ]);
@@ -885,7 +943,7 @@
         (d.nonConfirmeParAccompagnant ? ' Non confirmé par l\'accompagnant·e' + (a.declarer ? ' : c\'est à toi de répondre.' : '.') : '') }));
     }
     if (d.statut === 'cedee' && !a.declarer && dateIso(d.dateFr) >= aujourdhuiIso()) {
-      lignes.push(el('p', { classe: 'encadre info', texte: 'Les heures sont cédées. Saisis ta demande d\'absence chez France Travail, sur ton propre compte.' }));
+      lignes.push(el('p', { classe: 'encadre info', texte: 'Les heures sont cédées. Saisis ta demande d\'absence dans Horoquartz, sur ton propre compte.' }));
     }
     if (d.utiliseLe) lignes.push(el('p', { texte: 'Heures utilisées le ' + d.utiliseLe + ', d\'après ta déclaration.' }));
     if (d.reports) lignes.push(el('p', { texte: 'Date déjà changée.' }));
@@ -1128,7 +1186,7 @@
         vider(bas);
         bas.appendChild(tableau([
           { titre: 'Demande', cle: 'demande', type: 'fixe' }, { titre: 'Personne', cle: 'personne', type: 'nom' }, { titre: 'Date', cle: 'date', type: 'fixe' },
-          { titre: 'Objet', cle: 'objet', type: 'nom' }, { titre: 'Heures', cle: 'heures', type: 'nombre' }, { titre: 'État', cle: 'etat', type: 'nom' },
+          { titre: 'Objet', cle: 'objet', type: 'nom' }, { titre: 'Heures', cle: 'heures', type: 'nombre' }, { titre: 'Dont déplacement', cle: 'deplacement', type: 'nom' }, { titre: 'État', cle: 'etat', type: 'nom' },
           { titre: 'Utilisées le', cle: 'utiliseLe', type: 'fixe' },
           { titre: 'Accompagné·e par', cle: 'accompagnePar', type: 'nom' }, { titre: 'Refus', cle: 'refus' }, { titre: 'Dérogations', cle: 'derogations' },
           { titre: 'Contestation', cle: 'contestation', type: 'nom' }
@@ -1408,7 +1466,7 @@
     };
     var decrire = function (l) {
       return [el('p', { classe: 'num', texte: l.personne + ', le ' + l.date }),
-        el('p', { texte: heures(l.heures) + ' sur « ' + l.compteur + ' ». ' + l.libelle + '. Demande ' + l.demande + ', ' + depuis(l) + '.' + annee(l) }),
+        el('p', { texte: heures(l.heures) + ' sur « ' + l.compteur + ' »' + partDeplacement(l) + '. ' + l.libelle + '. Demande ' + l.demande + ', ' + depuis(l) + '.' + annee(l) }),
         l.auDelaDesHeures ? el('p', { classe: 'encadre info', texte: 'Au-delà des heures reçues. À toi de décider.' }) : null];
     };
 
@@ -1474,7 +1532,7 @@
     });
     var carteAClore = function (l) {
       return el('div', { classe: 'carte' }, [el('p', { classe: 'num', texte: l.personne + ', le ' + l.date }),
-        el('p', { texte: heures(l.heures) + ' sur « ' + l.compteur + ' ». Demande ' + l.demande + ', ' + (l.statut === 'valide' ? 'confirmée, cession non saisie' : 'cédée, sans réponse possible') + '.' + annee(l) }),
+        el('p', { texte: heures(l.heures) + ' sur « ' + l.compteur + ' »' + partDeplacement(l) + '. Demande ' + l.demande + ', ' + (l.statut === 'valide' ? 'confirmée, cession non saisie' : 'cédée, sans réponse possible') + '.' + annee(l) }),
         deuxTemps('Clore sans réponse', fait('api_clore', [l.demande], l.demande + (l.raison === 'annee_close' ? ' : demande close.' : l.statut === 'valide' ? ' : demande close. Les heures sont libérées.' : ' : demande close. La ligne est dans « Heures à restituer chez l\'employeur ».')),
           { nom: 'Clore sans réponse, demande ' + l.demande })]);
     };
