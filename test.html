@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="referrer" content="no-referrer">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-kZqdeg3XMzLzaOuAhORXwQwqDjJpE+Vg68HynxQIHmQ='; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src data:; connect-src https://script.google.com https://script.googleusercontent.com; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-ucxv6AtCv3yCdRqT6FSGV/1gcyfMNQd4ypNUkl7XWG4='; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src data:; connect-src https://script.google.com https://script.googleusercontent.com; base-uri 'none'; form-action 'none'">
 <title>Heures 77, TEST</title>
 <!-- Fichier produit par outils/construire-entree.js à partir de src/html/page.html. Ne pas modifier à la main. -->
 <!-- Polices de la charte. Si le chargement échoue, Georgia et Segoe UI prennent le relais : la page reste lisible.
@@ -149,7 +149,7 @@
 // Tout ce que la page doit savoir se lit après le « # » : cette partie de l'adresse ne part jamais vers l'hébergeur.
 (function () {
   'use strict';
-  var EXEC = "https://script.google.com/macros/s/AKfycbwGIGtDPT4hZvmjWE4v0VTvr8CGE3DHLxsvrPaEQBEK-otXtV1BeVVDIhSSlu2EEZGK/exec", VERSION = "0.12.0", TEST = true;
+  var EXEC = "https://script.google.com/macros/s/AKfycbwGIGtDPT4hZvmjWE4v0VTvr8CGE3DHLxsvrPaEQBEK-otXtV1BeVVDIhSSlu2EEZGK/exec", VERSION = "0.12.1", TEST = true;
   var app = document.getElementById('app');
   function lire(texte) {
     var lu = Object.create(null);
@@ -364,7 +364,7 @@
   // Texte sobre, voulu par Julien le 24/11/2026 : ni mise en garde, ni flatterie. On dit ce qui est demandé, et rien d'autre.
   var AIDE_UTILISATION = 'Tu déclares toi-même la date. Aucune pièce n\'est demandée.';
   var CHAMPS = { date: 'Date', type: 'Objet', site: 'Site', chantier: 'Objet', heures: 'Nombre d\'heures', compteur: 'Compteur',
-    accompagnant: 'Accompagnement', consentementTransmission: 'Accord de transmission', heureDebut: 'Heure de début' };
+    accompagnant: 'Accompagnement', consentementTransmission: 'Accord de cession', heureDebut: 'Heure de début' };
   var MOTIFS = {
     manquant: 'à renseigner', format: 'valeur illisible', hors_liste: 'valeur hors liste', jour_non_ouvre: 'choisis un jour de semaine, hors jours fériés',
     non_ouvert: 'ce chantier n\'est pas ouvert', pas_non_admis: 'par demi-heures, ou par demi-journées de 3,75 h',
@@ -375,7 +375,7 @@
   /** Les points en cause d'une demande, champ et motif : les mêmes mots au dépôt et à la confirmation. */
   function pointsEnCause(erreurs) {
     return el('ul', {}, erreurs.map(function (x) {
-      if (x.champ === 'consentementTransmission') return el('li', { texte: 'Accord de transmission : coche la case.' });
+      if (x.champ === 'consentementTransmission') return el('li', { texte: 'Accord de cession : coche la case.' });
       var motif = x.champ === 'heures' && x.motif === 'format' ? 'écris un nombre, par exemple 7,5' : (MOTIFS[x.motif] || x.motif);
       return el('li', { texte: (CHAMPS[x.champ] || x.champ) + ' : ' + motif });
     }));
@@ -828,7 +828,7 @@
       el('label', { for: 'heures', texte: 'Nombre d\'heures' }),
       aide('aide-heures', 'Par demi-heures, ou par demi-journées de 3,75 h. Exemple : 7,5. Une demande couvre une journée au plus : 7,5 heures.'), nb,
       el('label', { for: 'compteur', texte: 'Compteur' }), aideCompteur, compteur,
-      el('div', { classe: 'case' }, [accord, el('label', { for: 'accord', texte: 'J\'accepte que la section transmette cette cession à France Travail pour qu\'elle soit saisie.' })]),
+      el('div', { classe: 'case' }, [accord, el('label', { for: 'accord', texte: 'J\'accepte que le secrétaire cède ces heures à mon nom chez France Travail.' })]),
       envoyer, retour
     ]);
   }
