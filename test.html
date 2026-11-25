@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="referrer" content="no-referrer">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-5okVO9jNs/cCqQf1dATfT/hGwB4NFTVwp2wkgOw07hE='; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src data:; connect-src https://script.google.com https://script.googleusercontent.com; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-Znyz9UKQB6wlO0vGUI2ZklboZviGoveJw3UC+mz8qtY='; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src data:; connect-src https://script.google.com https://script.googleusercontent.com; base-uri 'none'; form-action 'none'">
 <title>Heures 77, TEST</title>
 <!-- Fichier produit par outils/construire-entree.js à partir de src/html/page.html. Ne pas modifier à la main. -->
 <!-- Polices de la charte. Si le chargement échoue, Georgia et Segoe UI prennent le relais : la page reste lisible.
@@ -159,7 +159,7 @@
 // Tout ce que la page doit savoir se lit après le « # » : cette partie de l'adresse ne part jamais vers l'hébergeur.
 (function () {
   'use strict';
-  var EXEC = "https://script.google.com/macros/s/AKfycbwGIGtDPT4hZvmjWE4v0VTvr8CGE3DHLxsvrPaEQBEK-otXtV1BeVVDIhSSlu2EEZGK/exec", VERSION = "0.15.0", TEST = true;
+  var EXEC = "https://script.google.com/macros/s/AKfycbwGIGtDPT4hZvmjWE4v0VTvr8CGE3DHLxsvrPaEQBEK-otXtV1BeVVDIhSSlu2EEZGK/exec", VERSION = "0.15.1", TEST = true;
   var app = document.getElementById('app');
   function lire(texte) {
     var lu = Object.create(null);
@@ -502,6 +502,8 @@
     deplacement: 'Dépose une nouvelle demande avec moins d\'heures de déplacement, ou sans déplacement.',
     les_deux: 'Dépose une nouvelle demande pour moins d\'heures, avec moins d\'heures de déplacement ou sans déplacement.'
   };
+  /** Libellé du serveur pour une demande annulée parce que sa date est arrivée sans confirmation (Regles, R6, date_passee). */
+  var LIBELLE_DATE_PASSEE = 'La date de la demande est passée sans confirmation.';
   var CONSEILS_REFUS = {
     R1: 'Dépose une nouvelle demande, avec une date plus lointaine.',
     R2: 'Réponds sur la carte de cette demande, dans ton espace, puis dépose une nouvelle demande.',
@@ -796,6 +798,21 @@
       if (r.action === 'CONF') {
         var confirmer = bouton('Confirmer ma demande', function (b) {
           appel('api_confirmer', [JETON], function (c) {
+            // Décision du secrétaire (version 0.15.1) : une réponse en retard fait attendre la demande, elle ne la refuse pas.
+            // Rien n'est écrit, le lien resservira. La page n'a pas le lien personnel : elle dit d'ouvrir le mail.
+            if (!c.ok && c.erreur === 'reponse_attendue') {
+              var cause = c.demande && c.demande.id ? c.demande : (c.refus && c.refus.demande) || null;
+              var texte = 'Cette demande attend. ' + (cause ? 'Ta demande ' + cause.id + ' du ' + cause.dateFr : 'Une de tes demandes') +
+                ' est en cours, date dépassée, sans réponse. Réponds d\'abord, puis reviens confirmer avec ce même lien. ' +
+                'Si la date de ta demande arrive avant, elle sera annulée : aucune heure n\'est cédée pour une date passée.';
+              vider(retour).appendChild(el('div', { classe: 'encadre', id: 'confirmation-attend', role: 'status', tabindex: '-1' }, [
+                el('p', { texte: texte }),
+                el('p', { texte: 'Pour répondre, ouvre le mail « [Heures 77] Ton lien personnel » : la question est sur la carte de cette demande.' })
+              ]));
+              annoncer(texte);
+              if (retour.firstChild.focus) retour.firstChild.focus();
+              return;
+            }
             if (!c.ok) return dire(retour, c);
             if (c.sansEffet) return dejaTraite(c);
             if (c.resultat === 'valide') {
@@ -819,7 +836,7 @@
         }, 'envoi');
         // Avant le clic, aucune phrase ne dit l'issue : c'est le serveur qui décide, au moment de la confirmation.
         return page('Confirmer une demande d\'heures', [recap,
-          el('p', { texte: 'Vérifie, puis confirme tout de suite : le délai de prévenance de la date se compte à la confirmation.' +
+          el('p', { texte: 'Vérifie, puis confirme tout de suite : c\'est à ta confirmation que l\'outil vérifie le délai avant ta date.' +
             (r.essaiDemande ? '' : ' Sans confirmation sous ' + r.confirmationHeures + ' heures, elle s\'annule seule.') }),
           confirmer, retour]);
       }
@@ -1087,7 +1104,7 @@
         if (r.ok) {
           // Même consigne que le mail « Demande … à confirmer » : le délai de prévenance se compte à la confirmation.
           return vueEspace({ genre: 'afaire', texte: 'Ce n\'est pas fini. Ouvre le mail « Demande ' + r.demande + ' à confirmer » et clique sur « Confirmer ma demande ». ' +
-            'Confirme-la tout de suite : le délai de prévenance de la date se compte à la confirmation.' + (r.essai ? '' : ' Sans confirmation sous ' + r.confirmationHeures + ' heures, elle s\'annule seule.') }, true);
+            'Confirme-la tout de suite : c\'est à ta confirmation que l\'outil vérifie le délai avant ta date.' + (r.essai ? '' : ' Sans confirmation sous ' + r.confirmationHeures + ' heures, elle s\'annule seule.') }, true);
         }
         if (r.erreurs) {
           signaler(retour, el('div', { classe: 'message erreur', role: 'alert', tabindex: '-1' }, [
@@ -1116,7 +1133,7 @@
       el('label', { for: 'date', texte: 'Date' }),
       // Le serveur donne la première date tenable : plus de calcul de tête. Sans elle, on rappelle la règle.
       aide('aide-date', e.premiereDatePossible
-        ? 'Première date possible si tu confirmes aujourd\'hui : ' + jourEtDate(e.premiereDatePossible) + '. Le délai se compte à partir de ta confirmation, pas de l\'envoi.'
+        ? 'Première date possible si tu confirmes aujourd\'hui : ' + jourEtDate(e.premiereDatePossible) + '. L\'outil vérifie le délai à ta confirmation, pas à l\'envoi.'
         : e.mandate ? 'Avec ton mandat : au moins 24 heures avant, plus 2 jours ouvrés pour la cession.' : 'Sans mandat : au moins 8 jours ouvrés avant, plus 2 jours ouvrés pour la cession.'), date, aideAnnee,
       el('label', { for: 'objet', texte: 'Objet' }), objet, blocVisite,
       el('label', { for: 'heures', texte: 'Nombre d\'heures' }),
@@ -1287,8 +1304,19 @@
     if (d.exercice && ANNEE && d.exercice !== ANNEE) lignes.push(el('p', { texte: 'Sur les heures ' + d.exercice + '.' }));
     if (d.attenteHeures) lignes.push(el('p', { texte: phraseReserve(d.exercice, d.reserve) }));
     else if (d.auDelaDesHeures) lignes.push(el('p', { texte: 'Ta demande est acceptée sous réserve : les heures ' + d.exercice + ' reçues par la section ne la couvrent pas encore. Le secrétaire la cède si les heures reçues le permettent.' }));
-    if (d.statut === 'deposee') lignes.push(el('p', { classe: 'encadre', texte: 'À faire : ouvre le mail « Demande ' + d.id + ' à confirmer » et clique sur « Confirmer ma demande ».' }));
-    if (d.refus) lignes.push(el('p', { texte: 'Motif : ' + phraseRefus(d.refus) }));
+    // Une demande à confirmer qui attend la réponse de la personne sur une autre demande (version 0.15.1) : on le dit, et on mène à la carte où répondre.
+    if (d.statut === 'deposee' && d.attendReponse && d.attendReponse.id) {
+      var enAttenteDe = d.attendReponse.id;
+      lignes.push(el('div', { classe: 'encadre' }, [
+        el('p', { texte: 'Elle attend ta réponse sur la demande ' + enAttenteDe + ' du ' + d.attendReponse.dateFr + '. Réponds d\'abord, puis confirme-la depuis le mail. Aucune heure n\'est cédée pour une date passée.' }),
+        bouton('Aller à la demande ' + enAttenteDe, function () { allerACarte(enAttenteDe); }, 'second', 'Aller à la demande ' + enAttenteDe + ', depuis la demande ' + d.id)
+      ]));
+    } else if (d.statut === 'deposee') lignes.push(el('p', { classe: 'encadre', texte: 'À faire : ouvre le mail « Demande ' + d.id + ' à confirmer » et clique sur « Confirmer ma demande ».' }));
+    // Date arrivée sans confirmation (version 0.15.1) : le fait, sans code ni alinéa.
+    // Le serveur pose « datePassee » sur le refus ; le libellé (R6) sert de repli devant un serveur plus ancien.
+    var datePassee = d.refus && (d.refus.datePassee === true || (d.refus.code === 'R6' && d.refus.libelle === LIBELLE_DATE_PASSEE));
+    if (datePassee) lignes.push(el('p', { texte: LIBELLE_DATE_PASSEE }));
+    else if (d.refus) lignes.push(el('p', { texte: 'Motif : ' + phraseRefus(d.refus) }));
     // La phrase d'avant la date d'effet ne sort que tant que cette date est à venir : après, elle serait fausse.
     if (d.refusNonOppose && ESSAI) lignes.push(el('p', { texte: phraseEssai(d.refusNonOppose, 'ta demande') }));
     var a = d.actions;
@@ -1922,7 +1950,7 @@
         el('p', { texte: 'Demande ' + d.demande + ' : ' + (d.code === 'R1' ? 'arrivée trop tard.' : 'pas confirmée à temps.') }),
         unSeul ? el('p', { texte: 'Motif : ' + t.motifsDerogation[cles[0]] }) : null,
         el('div', { classe: 'ligne' }, [motif, deuxTemps('Lever ce refus',
-          fait('api_deroger', function () { return [d.demande, d.code, unSeul ? cles[0] : motif.value]; }, function (r) { return d.demande + ' : refus levé, le bureau reçoit un mail.' + (r.avertissementEmployeur ? ' Le délai de l\'employeur est dépassé : il peut refuser l\'absence.' : ''); }),
+          fait('api_deroger', function () { return [d.demande, d.code, unSeul ? cles[0] : motif.value]; }, function (r) { return d.demande + ' : refus levé, le bureau reçoit un mail.' + (r.avertissementEmployeur ? ' L\'employeur peut refuser l\'absence.' : ''); }),
           { nom: 'Lever ce refus, demande ' + d.demande })])]);
     });
     var decisions = t.contestations.map(function (c) {
