@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="referrer" content="no-referrer">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-ZZX9wGAKyp9LO7SRdE9ul19C03wwZJE0nxi1vArNQ4U='; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src data:; connect-src https://script.google.com https://script.googleusercontent.com; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-Yb4FjlYgyrYzqHPt1Fl5jvK1DZcV8GF+QqghZ8lB6mQ='; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src data:; connect-src https://script.google.com https://script.googleusercontent.com; base-uri 'none'; form-action 'none'">
 <title>Heures 77, TEST</title>
 <!-- Fichier produit par outils/construire-entree.js à partir de src/html/page.html. Ne pas modifier à la main. -->
 <!-- Polices de la charte. Si le chargement échoue, Georgia et Segoe UI prennent le relais : la page reste lisible.
@@ -95,6 +95,14 @@
   summary { cursor: pointer; min-height: 44px; padding: 0.6rem 0; color: var(--bleu); font-weight: 600; }
   .empreinte { font-family: ui-monospace, Consolas, monospace; font-size: 0.8rem; overflow-wrap: anywhere; }
   .suite { margin-top: 2.5rem; border-top: 1px solid var(--bord); }
+  /* Après un geste dans une liste, la page reste où elle est : le message du résultat reste visible en haut de l'écran. */
+  .flottant { position: sticky; top: 0; z-index: 3; }
+  .raccourcis button { margin-top: 0.3rem; }
+  /* Une adresse ne se coupe jamais au milieu d'un mot : elle passe à la ligne après « @ » ou un point (wbr). */
+  .adresse { overflow-wrap: normal; word-break: normal; }
+  /* Dans une rangée, le texte peut rétrécir : sur 320 px, une adresse longue passe à la ligne au lieu de déborder. */
+  .rang > * { min-width: 0; }
+  .carte h3.num { margin: 0 0 0.3rem; font-size: 1rem; color: var(--encre); }
 
   /* Tableaux : ils défilent dans leur cadre, la première colonne reste en place. Un mot n'est jamais coupé :
      un nom long passe à la ligne entre deux mots. */
@@ -114,6 +122,8 @@
   @media (max-width: 600px) { tbody .colle.nom { width: 9rem; white-space: normal; } }
   .mot { white-space: nowrap; }
   td.empreinte { min-width: 15rem; }
+  /* Un commentaire long, même sans espace, passe à la ligne dans sa colonne, de largeur bornée. */
+  td.texte { min-width: 14rem; max-width: 22rem; overflow-wrap: anywhere; }
 
   .ligne { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; margin-top: 0.4rem; }
   .ligne select, .ligne input { width: auto; flex: 1 1 12rem; min-width: 0; max-width: 100%; }
@@ -149,7 +159,7 @@
 // Tout ce que la page doit savoir se lit après le « # » : cette partie de l'adresse ne part jamais vers l'hébergeur.
 (function () {
   'use strict';
-  var EXEC = "https://script.google.com/macros/s/AKfycbwGIGtDPT4hZvmjWE4v0VTvr8CGE3DHLxsvrPaEQBEK-otXtV1BeVVDIhSSlu2EEZGK/exec", VERSION = "0.14.0", TEST = true;
+  var EXEC = "https://script.google.com/macros/s/AKfycbwGIGtDPT4hZvmjWE4v0VTvr8CGE3DHLxsvrPaEQBEK-otXtV1BeVVDIhSSlu2EEZGK/exec", VERSION = "0.15.0", TEST = true;
   var app = document.getElementById('app');
   function lire(texte) {
     var lu = Object.create(null);
@@ -322,13 +332,37 @@
       avecLienPerdu ? el('p', {}, [lien(fabriquerLien(URL_APP, ENTREE, 'p', 'perdu'), 'Je n\'ai plus mon lien')]) : null
     ]);
   }
+  /**
+   * Après un geste du secrétaire dans une liste, l'écran se redessine sans bouger : vrai le temps d'un redessin.
+   * Le message du résultat reste à l'écran (encadré collé en haut) et reçoit le focus, sans faire défiler.
+   */
+  var garderPosition = false;
+  /** Durée pendant laquelle le message d'un geste reste collé en haut de l'écran. */
+  var COLLE = 6000;
+  var derniereAnnonce = null;
   /** Chaque écran : son titre, son contenu, le pied. Le titre reçoit le focus pour que le changement d'écran s'entende. */
   function page(titre, contenu, avecLienPerdu) {
+    var rester = garderPosition;
+    garderPosition = false;
+    var y = rester && typeof window.pageYOffset === 'number' ? window.pageYOffset : 0;
+    var message = derniereAnnonce;
+    derniereAnnonce = null;
     vider(app);
     var h1 = el('h1', { tabindex: '-1', texte: titre });
     app.appendChild(h1);
     contenu.forEach(function (c) { if (c) app.appendChild(c); });
     app.appendChild(pied(avecLienPerdu));
+    if (rester) {
+      window.scrollTo(0, y);
+      if (message && contenu.indexOf(message) !== -1) {
+        // Collé en haut six secondes seulement : ensuite il redevient un bloc normal et ne cache plus le haut des cartes.
+        message.className += ' flottant';
+        message.setAttribute('tabindex', '-1');
+        message.focus({ preventScroll: true });
+        setTimeout(function () { message.className = message.className.split(' ').filter(function (c) { return c !== 'flottant'; }).join(' '); }, COLLE);
+      }
+      return;
+    }
     window.scrollTo(0, 0);
     h1.focus();
   }
@@ -342,15 +376,24 @@
   }
   /** genre : 'info' (défaut), 'reussite' ou 'afaire'. */
   function encart(texte, genre) { return el('p', { classe: genre === 'afaire' ? 'encadre' : 'message ' + (genre || 'info'), texte: texte }); }
-  /** Une erreur est annoncée tout de suite par les lecteurs d'écran. */
-  function erreur(texte) { return el('p', { classe: 'message erreur', role: 'alert', texte: texte }); }
+  /** Une erreur est annoncée tout de suite par les lecteurs d'écran. Elle peut recevoir le focus. */
+  function erreur(texte) { return el('p', { classe: 'message erreur', role: 'alert', tabindex: '-1', texte: texte }); }
   function panne() { return erreur(ERREURS.technique); }
+  /** Une erreur dans la zone d'un écran : affichée, montrée, et le focus va dessus. noeud : un texte ou un nœud déjà fait. */
+  function signaler(zone, noeud) {
+    var n = typeof noeud === 'string' ? erreur(noeud) : noeud;
+    vider(zone).appendChild(n);
+    if (zone.scrollIntoView) zone.scrollIntoView();
+    if (n.focus) n.focus();
+    return n;
+  }
   /** Message passé d'un écran au suivant : affiché, et lu à voix haute. m : un texte, ou { texte, genre }. */
   function annonce(m) {
     if (!m) return null;
     var texte = typeof m === 'string' ? m : m.texte;
     annoncer(texte);
-    return encart(texte, typeof m === 'string' ? 'reussite' : m.genre);
+    derniereAnnonce = encart(texte, typeof m === 'string' ? 'reussite' : m.genre);
+    return derniereAnnonce;
   }
   function aide(id, texte) { return el('p', { classe: 'aide', id: id, texte: texte }); }
 
@@ -375,8 +418,18 @@
   // Texte sobre, voulu par Julien le 24/11/2026 : ni mise en garde, ni flatterie. On dit ce qui est demandé, et rien d'autre.
   var AIDE_UTILISATION = 'Tu déclares toi-même la date. Aucune pièce n\'est demandée.';
   var CHAMPS = { date: 'Date', type: 'Objet', site: 'Site', chantier: 'Objet', heures: 'Nombre d\'heures', compteur: 'Compteur',
-    heuresDeplacement: 'Dont heures de déplacement', compteurDeplacement: 'Compteur de déplacement',
-    accompagnant: 'Accompagnement', consentementTransmission: 'Accord de cession', heureDebut: 'Heure de début' };
+    heuresDeplacement: 'Heures de déplacement', compteurDeplacement: 'Compteur de déplacement',
+    accompagnant: 'Titulaire de mandat qui t\'accompagne', consentementTransmission: 'Accord de cession', heureDebut: 'Heure de début' };
+  // Décision du secrétaire du 25/11/2026 : le commentaire reste, visible de tout le bureau. On le dit sous le champ.
+  var AVIS_BUREAU = 'Lu par le bureau.';
+  var AIDE_COMMENTAIRE = AVIS_BUREAU + ' Sans nom de personne ni donnée de santé. ';
+  /**
+   * Vrai seulement si l'aide du champ affiche bien « Lu par le bureau. » au moment de l'envoi : le serveur ne montre
+   * au bureau qu'un texte écrit sous cet avis (contrat A3). Une page qui ne l'affiche pas n'envoie rien de vrai.
+   */
+  function avisAffiche(aideChamp) {
+    return !!aideChamp && !aideChamp.hidden && String(aideChamp.textContent).split(' ').join(' ').indexOf(AVIS_BUREAU) === 0;
+  }
   var MOTIFS = {
     manquant: 'à renseigner', format: 'valeur illisible', hors_liste: 'valeur hors liste', jour_non_ouvre: 'choisis un jour de semaine, hors jours fériés',
     non_ouvert: 'ce chantier n\'est pas ouvert', pas_non_admis: 'par demi-heures, ou par demi-journées de 3,75 h',
@@ -397,7 +450,15 @@
     }));
   }
   var ERREURS = {
-    jour_j_ou_apres: 'Ce n\'est plus possible le jour même ni après.', statut: 'L\'état de la demande ne le permet pas.',
+    jour_j_ou_apres: 'Ce n\'est plus possible le jour même ni après.', statut: 'L\'état de la demande ne le permet pas : elle a changé entre-temps. Recharge la page pour voir où elle en est.',
+    // Corriger sa réponse, une fois (version 0.15.0).
+    rien_a_corriger: 'Il n\'y a pas de réponse à corriger sur cette demande.',
+    pas_ta_reponse: 'Cette réponse a été donnée par l\'autre personne : c\'est à elle de la corriger.',
+    correction_deja_faite: 'Tu as déjà corrigé cette réponse une fois. Écris au secrétaire si elle est encore fausse.',
+    reponse_traitee: 'Cette réponse a déjà été traitée par le secrétaire. Écris-lui si elle est fausse.',
+    deplacement_declare: 'La personne accompagnée a déjà déclaré son déplacement : ta réponse ne se corrige plus. Écris au secrétaire si elle est fausse.',
+    date_effet_atteinte: 'Les règles s\'appliquent déjà : la date d\'effet ne passe pas après aujourd\'hui.',
+    reponse_attendue: 'Une de tes demandes est en cours, date dépassée, sans réponse. Réponds d\'abord : oui ou non, avec un commentaire si tu veux.',
     hors_delai: 'Le délai d\'un mois est passé.', contestation_deja_ouverte: 'Une contestation est déjà ouverte.',
     contestation_deja_tranchee: 'Le bureau a déjà tranché sur ce point.', annee_close: 'Les heures de cette année n\'existent plus : ce geste ne se saisit plus.', contestation_ouverte: 'Une contestation est ouverte sur cette demande : la décision du bureau d\'abord.',
     attestation_manquante: 'Coche la case d\'attestation.',
@@ -411,11 +472,11 @@
     commentaire_trop_long: 'Texte trop long.', avant_le_lendemain_de_la_date: 'La réponse se donne à partir du lendemain de la date.',
     main_a_une_autre_personne: 'Ce n\'est pas à toi de répondre pour l\'instant.', valeur_hors_liste: 'Réponse non prévue.',
     demande_non_cedee: 'Cette demande n\'attend pas de réponse sur l\'activité.',
-    date_utilisation_manquante: 'Indique le jour où tu as utilisé ces heures.', date_utilisation_illisible: 'Date non valable.',
+    date_utilisation_manquante: 'Indique le jour où tu as utilisé ces heures.', date_utilisation_illisible: 'Date non valable. Choisis le jour dans le calendrier du champ.',
     date_utilisation_future: 'La date d\'utilisation ne peut pas être dans le futur.',
     date_utilisation_hors_exercice: 'La date d\'utilisation doit être dans l\'année de la demande.',
     demande: 'Demande introuvable.', technique: 'L\'outil n\'a pas pu traiter la demande. Réessaie dans quelques minutes.',
-    motif_manquant: 'Choisis un motif dans la liste.', motif_hors_liste: 'Motif hors liste.', demande_non_valide: 'L\'état de la demande ne le permet plus.',
+    motif_manquant: 'Choisis un motif dans la liste.', motif_hors_liste: 'Motif hors liste.', demande_non_valide: 'L\'état de la demande ne le permet plus : elle a changé entre-temps. Recharge la page pour voir où elle en est.',
     code_non_derogeable: 'Ce refus ne se lève pas.', aucun_refus_de_ce_code: 'Il n\'y a plus de refus de ce type sur cette demande.',
     solde_insuffisant: 'Il ne reste pas assez d\'heures sur ce compteur.', compteur: 'Compteur inconnu.',
     heures: 'Écris un nombre, par exemple 150 ou 37,5.',
@@ -423,7 +484,7 @@
     adresse_employeur: 'Adresse France Travail ou Pôle emploi : refusée. Il faut une adresse personnelle.',
     adresse_deja_prise: 'Cette adresse est déjà celle d\'une autre personne.', personne: 'Personne introuvable.',
     personne_inactive: 'Cette fiche est désactivée.', aucun_lien: 'Cette personne n\'a pas de lien en ce moment.',
-    secretaire: 'Ce geste n\'est pas possible sur la fiche du secrétaire.', date: 'Date non valable.', chantier: 'Chantier introuvable ou déjà fermé.',
+    secretaire: 'Ce geste n\'est pas possible sur la fiche du secrétaire.', date: 'Date non valable. Choisis le jour dans le calendrier du champ, ou laisse-le vide pour aujourd\'hui.', chantier: 'Chantier introuvable ou déjà fermé.',
     fiche_deja_utilisee: 'Cette personne a déjà utilisé l\'outil. Sa fiche se désactive, elle ne se supprime pas.',
     correction: 'Cette ligne ne peut pas être annulée.',
     restitution_a_annuler: 'Des heures de ce compteur ont été rendues à la région. Annule d\'abord la ligne des heures rendues à la région, plus bas, puis cet ajout.', parametre: 'Réglage non modifiable.', inchange: 'La valeur est déjà celle-là.', nature: 'Geste inconnu.',
@@ -433,7 +494,7 @@
     date_lointaine: 'Cette date est trop lointaine : une demande se dépose pour cette année ou la suivante.',
     exercice: 'Année non admise.', exercice_clos: 'Cette année est close : ses heures ne se rendent plus.'
   };
-  /** Avant le vote de la règle : un fait et une consigne, une phrase par motif. Pas de code : il est réservé aux refus réels. */
+  /** Avant la date d'effet des règles : un fait et une consigne, une phrase par motif. Pas de code : il est réservé aux refus réels. */
   /** Sur la page « Demande refusée » : d'abord quoi faire. */
   /** Le solde qui manque, pour une demande avec déplacement (version 0.13.0). */
   var CONSEILS_R5 = {
@@ -449,16 +510,18 @@
     R6: 'Dépose une nouvelle demande.'
   };
   var DATE_EFFET = '';
+  /** Vrai quand le serveur dit la date d'effet des règles à venir (dernier appel qui le dit). Sinon, aucune phrase d'avant cette date. */
+  var ESSAI = false;
   // Année en cours à Paris, lue au dernier appel de l'espace : la page dit l'année d'une demande quand ce n'est pas celle-là.
   var ANNEE = '';
   var COMMENTAIRE_MAX = 300;
   /**
-   * Avant la date d'effet : ce que l'outil oppose déjà, ce qu'il calcule seulement. Le vote porte sur la règle,
-   * pas sur l'outil. dateEffet : « jj/mm/aaaa », vide si l'écran ne la connaît pas.
+   * Date d'effet des règles à venir : ce que l'outil oppose déjà, ce qu'il calcule seulement.
+   * dateEffet : « jj/mm/aaaa », vide si l'écran ne la connaît pas.
    */
-  function bandeauAvantVote(dateEffet) {
-    return 'Avant le vote' + (dateEffet ? ' du ' + dateEffet : ' de la règle') + ' : l\'outil applique déjà le délai de prévenance, l\'accompagnement et les compteurs réservés. ' +
-      'Les autres refus de la règle sont calculés et affichés, sans être opposés.';
+  function bandeauAvantDateEffet(dateEffet) {
+    return (dateEffet ? 'Avant le ' + dateEffet + ', date d\'effet des règles' : 'Avant la date d\'effet des règles') + ', l\'outil applique déjà le délai de prévenance, l\'accompagnement et les compteurs réservés. ' +
+      'Les autres refus sont calculés et affichés, sans être opposés.';
   }
   /** Demande acceptée à crédit : la section n'a encore reçu aucune heure de son année. Même phrase que le mail (Messages.phraseReserve). */
   /** reserve : 'annee' (ou absent), 'mandat' ou 'deplacement' : la famille d'heures qui manque (même phrase que le mail). */
@@ -476,7 +539,10 @@
     R5: 'il faudra assez d\'heures sur le compteur.',
     R6: 'il faudra confirmer la demande dans le délai.'
   };
-  /** sujet : « ta demande » ou « le changement de date ». dateEffet, heures : ceux de l\'écran, sinon les derniers connus. Le vote n'est pas acquis. */
+  /**
+   * Même phrase que le mail (Messages.phraseEssai). sujet : « ta demande » ou « le changement de date ». dateEffet, heures :
+   * ceux de l'écran, sinon les derniers connus. Chaque écran ne l'appelle que si le serveur dit la date d'effet à venir (essai).
+   */
   function phraseEssai(refus, sujet, dateEffet, heures) {
     var d = dateEffet || DATE_EFFET;
     var h = typeof heures === 'number' ? heures : CONFIRMATION_HEURES;
@@ -484,7 +550,8 @@
       ? 'il faudra répondre d\'abord sur ta demande ' + refus.demande.id + ' du ' + refus.demande.dateFr + ', en cours, date dépassée, sans réponse.'
       : refus.code === 'R6' && typeof h === 'number' ? 'il faudra confirmer la demande dans les ' + h + ' heures.'
       : (PHRASES_ESSAI[refus.code] || 'elle s\'appliquera.');
-    return 'Avant le vote : ' + sujet + (/^le /.test(sujet) ? ' est accepté. ' : ' est acceptée. ') + 'Si la règle est adoptée, ' + (d ? 'à partir du ' + d + ' ' : '') + consigne;
+    return (d ? 'Avant le ' + d + ', cette règle ne s\'applique pas encore : ' : 'Cette règle ne s\'applique pas encore : ') +
+      sujet + (/^le /.test(sujet) ? ' est accepté. ' : ' est acceptée. ') + (d ? 'À partir de cette date, ' : 'À partir de la date d\'effet des règles, ') + consigne;
   }
   /** Le motif d'abord, en clair ; le code et l'alinéa à la fin, pour qui veut vérifier. */
   function phraseRefus(r) { return r.libelle + ' (' + (r.manuel ? 'alinéa ' + r.alinea : r.code + ', alinéa ' + r.alinea) + ')'; }
@@ -496,8 +563,7 @@
   /** Un lien refusé (lien éteint, fiche désactivée) n'est pas une panne : on dit que le lien ne marche plus. */
   function dire(zone, r, textes) {
     if (r.erreur === 'lien' && !(textes && textes.lien)) return lienInvalide();
-    vider(zone).appendChild(erreur(phraseErreur(r, textes)));
-    zone.scrollIntoView();
+    signaler(zone, phraseErreur(r, textes));
   }
 
   /**
@@ -531,6 +597,41 @@
       action(b);
     });
     return b;
+  }
+  /**
+   * Réponse en deux temps : le premier appui montre en une phrase ce qui va être enregistré, rien ne part.
+   * « Envoyer » envoie ce qui a été relu ; « Modifier » rend les boutons de départ. Rien ne demande pourquoi.
+   * depart : les boutons du premier appui, cachés pendant la relecture. envoyer(b) : l'appel au serveur.
+   */
+  function relire(zone, depart, phrase, libelleEnvoi, envoyer, retourErreurs, champs, nomEnvoi) {
+    var bloc = el('div', { classe: 'encadre', role: 'group', 'aria-label': 'Relecture de ta réponse' });
+    var texte = el('p', { tabindex: '-1', texte: phrase });
+    // Ce qui part est ce que la phrase montre : pendant la relecture, les champs et la case ne se modifient plus.
+    var gel = champs || [];
+    gel.forEach(function (c) { c.disabled = true; });
+    var fermer = function () {
+      vider(zone);
+      gel.forEach(function (c) { c.disabled = false; });
+      depart.forEach(function (b) { b.hidden = false; });
+      if (depart[0] && depart[0].focus) depart[0].focus();
+    };
+    bloc.appendChild(texte);
+    bloc.appendChild(bouton(libelleEnvoi, function (b) { if (retourErreurs) vider(retourErreurs); envoyer(b); }, 'envoi', nomEnvoi));
+    bloc.appendChild(bouton('Modifier', fermer, 'second', nomEnvoi ? 'Modifier : ' + minuscule(nomEnvoi) : null));
+    depart.forEach(function (b) { b.hidden = true; });
+    vider(zone).appendChild(bloc);
+    texte.focus();
+    annoncer(phrase + ' Appuie sur « ' + libelleEnvoi + ' » pour l\'enregistrer, ou sur « Modifier ».');
+    return bloc;
+  }
+  /** La phrase relue avant d'envoyer la réponse sur l'état de réalisation. quoi : « l'activité » ou « la visite » (accompagnant·e). */
+  function phraseReponse(valeur, utiliseLe, deplacement, quoi) {
+    var q = quoi || 'l\'activité';
+    if (valeur !== 'fait') return 'Tu réponds : non, ' + q + ' n\'a pas eu lieu.';
+    var parts = [];
+    if (utiliseLe) parts.push('heures utilisées le ' + utiliseLe);
+    if (deplacement !== null && deplacement !== undefined && String(deplacement).trim() !== '') parts.push(heures(String(deplacement).trim()) + ' de déplacement utilisées');
+    return 'Tu réponds : oui, ' + (parts.length ? parts.join(', ') : q + ' a eu lieu') + '.';
   }
   function option(valeur, libelle) { return el('option', { value: valeur, texte: libelle }); }
   function resume(d) { return d.objet + (d.site ? ', ' + d.site : '') + ', le ' + d.dateFr + ', ' + heures(d.heures) + ', compteur « ' + d.compteur + ' »' + partDeplacement(d); }
@@ -568,7 +669,7 @@
     { titre: 'Compteur', cle: 'libelle', type: 'nom' }, { titre: 'Reçu', cle: 'dotation', type: 'nombre' }, { titre: 'Rendu à la région', cle: 'rendu', type: 'nombre' }, { titre: 'Engagé', cle: 'engage', type: 'nombre' },
     { titre: 'Cédé', cle: 'cede', type: 'nombre' }, { titre: 'Restitué', cle: 'restitue', type: 'nombre' }, { titre: 'Solde', cle: 'solde', type: 'nombre' }
   ];
-  var AIDE_COMPTEURS = 'Reçu : les heures versées à la section. Rendu à la région : les heures que la section lui a rendues. Engagé : demandé et confirmé. Cédé : saisi chez l\'employeur. Restitué : heures revenues d\'une personne à la section. Solde : ce qui reste à demander. Un solde négatif : plus d\'heures engagées que reçues sur l\'année.';
+  var AIDE_COMPTEURS = 'Reçu : les heures versées à la section. Rendu à la région : les heures que la section lui a rendues. Engagé : demandé et confirmé. Cédé : heures cédées aux personnes, cession notée par le secrétaire. Restitué : heures revenues d\'une personne à la section. Solde : ce qui reste à demander. Un solde négatif : plus d\'heures engagées que reçues sur l\'année.';
   /** Ce qu'est chaque compteur, dit à la personne qui remplit le formulaire. */
   var AIDES_COMPTEURS = {
     MT: 'le temps de l\'activité elle-même (visite, réunion, travail sur un texte)',
@@ -593,6 +694,41 @@
     if (typeof window.open === 'function') window.open(adresse, '_top');
     else if (typeof location !== 'undefined') location.href = adresse;
   }
+  /**
+   * Recharge la page : la page d'entrée se recharge elle-même (le jeton reste après le « # ») ;
+   * la page servie par Google rouvre le lien personnel dans la fenêtre entière.
+   */
+  function recharger() {
+    if (ENTREE && typeof location !== 'undefined' && location.reload) return location.reload();
+    var adresse = fabriquerLien(URL_APP, '', 'j', JETON);
+    if (typeof window.open === 'function') window.open(adresse, '_top');
+    else if (typeof location !== 'undefined') location.href = adresse;
+  }
+  /** Repère du dernier rechargement demandé pour une version du serveur, gardé le temps de l'onglet. Absent si le navigateur le refuse. */
+  var REPERE_VERSION = 'heures-77-recharge';
+  function repereVersion(valeur) {
+    try {
+      if (typeof sessionStorage === 'undefined' || !sessionStorage) return null;
+      if (valeur === undefined) return sessionStorage.getItem(REPERE_VERSION);
+      if (valeur === null) sessionStorage.removeItem(REPERE_VERSION);
+      else sessionStorage.setItem(REPERE_VERSION, valeur);
+    } catch (x) { /* stockage refusé : la page marche sans repère */ }
+    return null;
+  }
+  /**
+   * Page d'une autre version que le serveur : un encadré et « Recharger ». Si la page a déjà été rechargée pour cette
+   * version et que l'écart demeure (page d'entrée pas encore redéposée), elle le dit, sans bouton qui tournerait en boucle.
+   */
+  function encadreVersion(versionServeur) {
+    if (!versionServeur || !VERSION || versionServeur === VERSION) { repereVersion(null); return null; }
+    if (repereVersion() === versionServeur) {
+      return el('div', { classe: 'encadre', id: 'version-perimee' }, [el('p', { texte: 'La page n\'est pas encore à jour. Réessaie dans quelques minutes.' })]);
+    }
+    return el('div', { classe: 'encadre', id: 'version-perimee' }, [
+      el('p', { texte: 'Cette page date d\'une version précédente. Recharge-la avant de continuer.' }),
+      bouton('Recharger', function () { repereVersion(versionServeur); recharger(); })
+    ]);
+  }
   function vueAccueil() {
     page('Il te faut ton lien personnel', [
       el('p', { texte: 'Cet outil s\'ouvre avec ton lien personnel. Tu l\'as reçu dans un mail intitulé « [Heures 77] Ton lien personnel ».' }),
@@ -609,12 +745,15 @@
   function vuePerdu() {
     var champ = el('input', { type: 'email', id: 'adresse', autocomplete: 'email', 'aria-describedby': 'aide-adresse' });
     var retour = el('div');
-    var envoyer = bouton('Recevoir un nouveau lien', function (b) {
+    var envoyer = bouton('Recevoir un nouveau lien personnel', function (b) {
       appel('api_lienPerdu', [champ.value], function (r) {
         vider(retour);
-        if (!r.ok) return retour.appendChild(panne());
-        retour.appendChild(encart(r.message));
-        annoncer(r.message);
+        if (!r.ok) return signaler(retour, panne());
+        var texte = / Tu peux fermer cette page\.$/.test(r.message)
+          ? r.message.replace(/ Tu peux fermer cette page\.$/, ' Regarde aussi dans les indésirables. Tu peux fermer cette page.')
+          : r.message + ' Regarde aussi dans les indésirables.';
+        retour.appendChild(encart(texte));
+        annoncer(texte);
       }, b);
     }, 'envoi');
     page('Lien perdu', [
@@ -630,6 +769,8 @@
     appel('api_ouvrirAction', [JETON], function (r) {
       if (!r.ok) return lienInvalide();
       regle = r.versionRegle;
+      ESSAI = !!r.essai;
+      if (r.dateEffet) DATE_EFFET = r.dateEffet;
       var d = r.demande;
       var recap = el('div', { classe: 'carte' }, [
         el('p', { classe: 'num', texte: 'Demande ' + d.id + (r.pour ? ', déposée par ' + r.pour : '') }),
@@ -648,7 +789,9 @@
       if (!r.encoreUtile) {
         // « Déjà servi » seulement si ce lien a produit son effet ; une demande éteinte entre-temps n'a rien reçu de lui.
         var constat = r.dejaServi ? 'Ce lien a déjà servi : il ne marche plus.' : 'Ce lien ne marche plus.';
-        return page('Demande d\'heures', [recap, encart(constat + ' État de la demande : ' + r.statutLibelle + '.'), suite()]);
+        // Lien périmé : la suite est l'espace personnel, ou un nouveau lien personnel si on n'a plus le sien.
+        return page('Demande d\'heures', [recap, encart(constat + ' État de la demande : ' + r.statutLibelle + '.'), suite(),
+          r.pour ? null : el('p', {}, [lien(fabriquerLien(URL_APP, ENTREE, 'p', 'perdu'), 'Recevoir un nouveau lien personnel')])]);
       }
       if (r.action === 'CONF') {
         var confirmer = bouton('Confirmer ma demande', function (b) {
@@ -659,7 +802,8 @@
               // Sans heure reçue sur l'année de la demande, la confirmation dit la réserve au lieu de promettre la cession.
               return fini('C\'est confirmé', 'Demande ' + d.id + ' confirmée. ' + (c.attenteHeures && c.exercice ? phraseReserve(c.exercice, c.reserve) + ' Quand tu les as reçues, saisis ta demande d\'absence sur ton propre compte.'
                 : 'Le secrétaire va te céder les heures. Quand tu les as reçues, saisis ta demande d\'absence sur ton propre compte.'), 'reussite',
-                c.refusNonOppose ? [el('p', { classe: 'encadre info', texte: phraseEssai(c.refusNonOppose, 'ta demande', r.dateEffet, r.confirmationHeures) })] : []);
+                c.refusNonOppose && r.essai
+                  ? [el('p', { classe: 'encadre info', texte: phraseEssai(c.refusNonOppose, 'ta demande', r.dateEffet, r.confirmationHeures) })] : []);
             }
             var refus = 'La demande ' + d.id + ' est refusée. ' + phraseRefus(c.refus);
             // Le serveur dit les points en cause (champ et motif) : la page les écrit comme au dépôt.
@@ -675,42 +819,54 @@
         }, 'envoi');
         // Avant le clic, aucune phrase ne dit l'issue : c'est le serveur qui décide, au moment de la confirmation.
         return page('Confirmer une demande d\'heures', [recap,
-          el('p', { texte: r.essaiDemande ? 'Vérifie, puis confirme.' : 'Vérifie, puis confirme. Sans confirmation dans les ' + r.confirmationHeures + ' heures, la demande s\'éteint.' }),
+          el('p', { texte: 'Vérifie, puis confirme tout de suite : le délai de prévenance de la date se compte à la confirmation.' +
+            (r.essaiDemande ? '' : ' Sans confirmation sous ' + r.confirmationHeures + ' heures, elle s\'annule seule.') }),
           confirmer, retour]);
       }
       var mot = el('textarea', { id: 'mot', maxlength: String(r.commentaireMax), 'aria-describedby': 'aide-mot' });
-      var utilise = r.dateUtilisationAttendue ? el('input', { type: 'date', id: 'utilise', max: aujourdhuiIso(), 'aria-describedby': 'aide-utilise' }) : null;
+      var aideMot = aide('aide-mot', AIDE_COMMENTAIRE + r.commentaireMax + ' caractères au plus.');
+      // Préremplie avec la date de la demande (décision du secrétaire), modifiable.
+      var utilise = r.dateUtilisationAttendue ? el('input', { type: 'date', id: 'utilise', max: aujourdhuiIso(), value: dateIso(d.dateFr), 'aria-describedby': 'aide-utilise' }) : null;
+      if (utilise) utilise.value = dateIso(d.dateFr);
       var atteste = el('input', { type: 'checkbox', id: 'attestation', 'aria-required': 'true' });
       // Une page servie par un serveur plus ancien n'envoie pas deplacementPrevu : pas de champ, comme avant.
       var depUtilise = r.deplacementPrevu > 0 ? champDeplacementUtilise('', r.deplacementPrevu) : null;
+      var releve = el('div');
+      var boutonsReponse = [];
+      // Premier appui : la page vérifie, puis montre ce qui va être enregistré. Rien ne part avant « Envoyer ma réponse ».
       var repondre = function (valeur) {
-        return function (b) {
-          if (valeur === 'fait' && utilise && !utilise.value) return vider(retour).appendChild(erreur(ERREURS.date_utilisation_manquante));
-          if (!atteste.checked) return vider(retour).appendChild(erreur(ERREURS.attestation_manquante));
+        return function () {
+          if (valeur === 'fait' && utilise && !utilise.value) return signaler(retour, ERREURS.date_utilisation_manquante);
+          if (!atteste.checked) return signaler(retour, ERREURS.attestation_manquante);
           // Le champ affiché ne se laisse pas vide : sans lui, le serveur compterait le déplacement utilisé en entier.
-          if (valeur === 'fait' && depUtilise && !String(depUtilise.saisie.value || '').trim()) return vider(retour).appendChild(erreur(ERREURS.deplacement_utilise));
-          var args = [JETON, valeur, mot.value, valeur === 'fait' && utilise ? dateFr(utilise.value) : '', atteste.checked === true];
-          if (valeur === 'fait' && depUtilise) args.push(depUtilise.saisie.value);
-          appel('api_declarerEtat', args, function (c) {
-            if (!c.ok) return dire(retour, c);
-            if (c.sansEffet) return dejaTraite(c);
-            fini('C\'est noté', 'Demande ' + d.id + ' : ' + (c.valeur === 'fait' ? 'elle a eu lieu.' : 'elle n\'a pas eu lieu.'), 'reussite');
-          }, b);
+          if (valeur === 'fait' && depUtilise && !String(depUtilise.saisie.value || '').trim()) return signaler(retour, ERREURS.deplacement_utilise);
+          vider(retour);
+          var le = valeur === 'fait' && utilise ? dateFr(utilise.value) : '';
+          // Le 7e argument dit que le champ affichait « Lu par le bureau. » au moment de l'envoi (version 0.15.0).
+          var args = [JETON, valeur, mot.value, le, atteste.checked === true, valeur === 'fait' && depUtilise ? depUtilise.saisie.value : undefined, avisAffiche(aideMot)];
+          var champs = [mot, atteste].concat(utilise ? [utilise] : [], depUtilise ? [depUtilise.saisie] : []);
+          relire(releve, boutonsReponse, phraseReponse(valeur, le, valeur === 'fait' && depUtilise ? depUtilise.saisie.value : null, r.pour ? 'la visite' : ''), 'Envoyer ma réponse', function (b) {
+            appel('api_declarerEtat', args, function (c) {
+              if (!c.ok) return dire(retour, c);
+              if (c.sansEffet) return dejaTraite(c);
+              fini('C\'est noté', 'Demande ' + d.id + ' : ' + (c.valeur === 'fait' ? 'elle a eu lieu.' : 'elle n\'a pas eu lieu.'), 'reussite');
+            }, b);
+          }, retour, champs);
         };
       };
-      // Le mot facultatif vient avant les deux boutons : on l'écrit, puis on répond. Oui et non ont le même poids.
-      page('Cette activité a-t-elle eu lieu ?', [recap,
+      boutonsReponse.push(bouton('Oui, elle a eu lieu', repondre('fait')), bouton('Non, elle n\'a pas eu lieu', repondre('pas_fait')));
+      // Même ordre que sur la carte de l'espace : date d'utilisation, déplacement, commentaire, attestation, puis oui ou non.
+      // L'accompagnant·e répond sur une visite : la question le dit, comme le mail.
+      page(r.pour ? 'La visite a-t-elle eu lieu ?' : 'Cette activité a-t-elle eu lieu ?', [recap,
         el('p', { texte: 'Réponds oui ou non.' }),
-        el('label', { for: 'mot', texte: 'Commentaire (facultatif)' }),
-        aide('aide-mot', 'Ne nomme personne, n\'écris rien sur la santé ou la vie privée. ' + r.commentaireMax + ' caractères au plus.'),
-        mot,
         utilise ? el('label', { for: 'utilise', texte: LIBELLE_UTILISATION }) : null,
         utilise ? aide('aide-utilise', AIDE_UTILISATION) : null,
         utilise].concat(depUtilise ? depUtilise.bloc : [], [
-        el('div', { classe: 'case' }, [atteste, el('label', { for: 'attestation', texte: 'J\'atteste que ma déclaration est exacte.' })]),
-        bouton('Oui, elle a eu lieu', repondre('fait')),
-        bouton('Non, elle n\'a pas eu lieu', repondre('pas_fait')),
-        retour]));
+        el('label', { for: 'mot', texte: 'Commentaire (facultatif)' }),
+        aideMot,
+        mot,
+        el('div', { classe: 'case' }, [atteste, el('label', { for: 'attestation', texte: 'J\'atteste que ma déclaration est exacte.' })])
+      ], boutonsReponse, [releve, retour]));
     });
   }
 
@@ -720,7 +876,10 @@
 
   function formulaire(e) {
     var cle = cleUnique();
-    var date = el('input', { type: 'date', id: 'date', 'aria-required': 'true', 'aria-describedby': 'aide-date' });
+    // Bornes du calendrier, données par le serveur en jj/mm/aaaa : la première date tenable si la personne confirme
+    // aujourd'hui, et le 31/12 de l'année suivante. Un serveur ancien ne les donne pas : pas de borne.
+    var date = el('input', { type: 'date', id: 'date', 'aria-required': 'true', 'aria-describedby': 'aide-date',
+      min: e.premiereDatePossible ? dateIso(e.premiereDatePossible) || null : null, max: e.dernierJourAdmis ? dateIso(e.dernierJourAdmis) || null : null });
     var objet = el('select', { id: 'objet', 'aria-required': 'true' }, [option('', 'Choisir')].concat(e.objets.map(function (o) { return option(o.code, o.libelle); })));
     var site = el('select', { id: 'site' }, [option('', 'Choisir')]);
     var secteurs = {};
@@ -759,13 +918,25 @@
     var compteur = el('select', { id: 'compteur', 'aria-required': 'true', 'aria-describedby': 'aide-compteur' },
       (unSeul ? [] : [option('', 'Choisir')]).concat(optionsCompteurs.map(function (o) { return o.noeud; })));
     if (unSeul) compteur.value = ouverts[0].code;
-    var expliques = deMandat.filter(function (c) { return AIDES_COMPTEURS[c.code]; });
+    // Décision du secrétaire : pour une personne qui a un mandat à la date choisie (au jour, sans date), « Mandats élu·es »
+    // est préchoisi. Il suit la date tant que la personne n'a pas choisi elle-même dans la liste.
+    var reserveMandat = deMandat.filter(function (c) { return c.reserve === true; })[0] || null;
+    var choisiALaMain = false;
+    compteur.addEventListener('change', function () { choisiALaMain = true; });
+    var preChoisir = function () {
+      if (choisiALaMain || !reserveMandat || !mandatALaDate()) return;
+      compteur.value = reserveMandat.code;
+    };
+    preChoisir();
+    var expliques =deMandat.filter(function (c) { return AIDES_COMPTEURS[c.code]; });
     // La date choisie ouvre ou ferme les compteurs réservés : une phrase dit pourquoi.
     var COMPTEURS_A_LA_DATE = {
       ouverts: 'À cette date, tu auras un mandat : les compteurs réservés aux titulaires de mandat te sont ouverts.',
       fermes: 'À cette date, ton mandat sera terminé : les compteurs réservés aux titulaires de mandat ne te sont pas ouverts.',
       pasEncore: 'À cette date, tu n\'auras pas de mandat.'
     };
+    // Sans mandat aujourd'hui ni à venir : un seul compteur possible. Une phrase le dit, sans liste à une option grisée.
+    var compteurUnique = unSeul && fermes > 0 && !e.mandate && !debutMandat;
     var aideCompteurDate = el('p', { id: 'aide-compteur-date' });
     var aideSansMandat = fermes ? el('p', { id: 'aide-compteur-sans-mandat', texte: 'Tu vois les deux compteurs de mandat. Sans mandat, tu ne peux demander que sur « Mandats tous ».' }) : null;
     aideCompteurDate.hidden = true;
@@ -795,6 +966,7 @@
       if (aideSansMandat) aideSansMandat.hidden = !e.mandate && ouvre;
       aideCompteurDate.textContent = typo(phrase);
       aideCompteurDate.hidden = !phrase;
+      preChoisir();
       return phrase;
     };
     // Heures de déplacement comprises dans les heures de mandat : un champ facultatif, et pour une personne avec mandat
@@ -832,8 +1004,8 @@
     nb.addEventListener('input', majAlerte);
     nb.addEventListener('change', majAlerte);
     var blocDeplacement = deDeplacement.length ? el('div', { id: 'bloc-deplacement' }, [
-      el('label', { for: 'heures-deplacement', texte: 'Dont heures de déplacement' }),
-      aide('aide-heures-deplacement', 'Pour une note de frais. Par demi-heures. Elles sont comprises dans tes heures de mandat. Exemple : 1 h à l\'aller et 1 h au retour, 2 h. Si tu n\'as besoin que du trajet, demande autant d\'heures de mandat que de déplacement. Exemple : 2 h, dont 2 h.'),
+      el('label', { for: 'heures-deplacement', texte: 'Heures de déplacement (facultatif)' }),
+      aide('aide-heures-deplacement', 'Elles servent à la note de frais, se comptent par demi-heures et sont comprises dans les heures demandées. Si tu n\'as besoin que du trajet, demande autant d\'heures de mandat que de déplacement. Exemple : 2 h, dont 2 h.'),
       nbDeplacement, alerteDeplacement, aideDeplacementTous, blocCompteurDeplacement
     ]) : null;
     majDeplacement();
@@ -844,7 +1016,7 @@
       : 'À cette date, tu auras un mandat : tu visites seul·e ou avec d\'autres titulaires de mandat. Chacun·e dépose sa propre demande.' }) : null;
     var blocAccompagnant = avecChamp ? el('div', { id: 'bloc-accompagnant' }, [
       el('label', { for: 'accompagnant', texte: 'Titulaire de mandat qui t\'accompagne' }),
-      aide('aide-accompagnant', e.mandate ? 'À cette date, ton mandat sera terminé : nomme la personne qui t\'accompagne.' : 'Sans mandat, tu ne visites jamais seul·e.'),
+      aide('aide-accompagnant', e.mandate ? 'À cette date, ton mandat sera terminé : nomme la personne qui t\'accompagne.' : 'Nomme le ou la titulaire de mandat qui t\'accompagne.'),
       accompagnant]) : null;
     /** Vrai quand la visite doit être accompagnée : pas de mandat à la date choisie (au jour, sans date). */
     var accompagnee = function () { return !mandatALaDate(); };
@@ -885,6 +1057,10 @@
     };
     date.addEventListener('change', suivreDate);
     date.addEventListener('input', suivreDate);
+    /** Un raccourci remplit le champ des heures : les deux durées les plus demandées, sans clavier. */
+    var raccourci = function (libelle, valeur) {
+      return bouton(libelle, function () { nb.value = valeur; majAlerte(); annoncer('Nombre d\'heures : ' + valeur + '.'); }, 'second');
+    };
     var retour = el('div');
     var envoyer = bouton('Envoyer la demande', function (b) {
       // Champ vide ou « 0 » : pas de déplacement, et aucun compteur de déplacement n'est envoyé.
@@ -896,25 +1072,34 @@
       appel('api_deposer', [JETON, f, cle], function (r) {
         vider(retour);
         if (r.ok) {
-          return vueEspace({ genre: 'afaire', texte: 'Ce n\'est pas fini. Ouvre le mail « Demande ' + r.demande + ' à confirmer » et clique sur « Confirmer ma demande »' + (r.essai ? '.' : ' dans les ' + r.confirmationHeures + ' heures. Sans ça, la demande s\'éteint.') }, true);
+          // Même consigne que le mail « Demande … à confirmer » : le délai de prévenance se compte à la confirmation.
+          return vueEspace({ genre: 'afaire', texte: 'Ce n\'est pas fini. Ouvre le mail « Demande ' + r.demande + ' à confirmer » et clique sur « Confirmer ma demande ». ' +
+            'Confirme-la tout de suite : le délai de prévenance de la date se compte à la confirmation.' + (r.essai ? '' : ' Sans confirmation sous ' + r.confirmationHeures + ' heures, elle s\'annule seule.') }, true);
         }
         if (r.erreurs) {
-          var alerte = el('div', { classe: 'message erreur', role: 'alert', tabindex: '-1' }, [
+          signaler(retour, el('div', { classe: 'message erreur', role: 'alert', tabindex: '-1' }, [
             el('p', { texte: 'La demande n\'est pas partie. Corrige ces points :' }),
             pointsEnCause(r.erreurs)
-          ]);
-          retour.appendChild(alerte);
-          retour.scrollIntoView();
-          alerte.focus();
+          ]));
         } else if (r.erreur === 'lien') lienInvalide();
-        else retour.appendChild(erreur(phraseErreur(r)));
+        else if (r.erreur === 'reponse_attendue') {
+          // R2 au dépôt (version 0.15.0) : rien n'est écrit. La phrase reçue nomme la demande, le bouton y mène.
+          var enCause = r.demande && r.demande.id ? r.demande.id : '';
+          signaler(retour, el('div', { classe: 'message erreur', role: 'alert', tabindex: '-1' }, [
+            el('p', { texte: r.refus && r.refus.libelle ? r.refus.libelle : ERREURS.reponse_attendue }),
+            enCause ? bouton('Aller à la demande ' + enCause, function () { allerACarte(enCause); }, 'second', 'Aller à la demande ' + enCause) : null
+          ]));
+        }
+        else signaler(retour, phraseErreur(r));
       }, b);
     }, 'envoi');
-    // Un état de réalisation attend la personne : on le lui dit avant qu'elle remplisse, pas après le mail de confirmation.
-    var enAttente = e.demandes.filter(function (d) { return d.actions.declarer; }).map(function (d) { return d.id; });
+    // Un état de réalisation attend la personne : l'espace le dit une fois, au-dessus du formulaire (vueEspace).
+    if (compteurUnique) {
+      compteur.hidden = true;
+      // Aucune date ne les ouvrira : les compteurs réservés quittent la liste cachée.
+      optionsCompteurs.forEach(function (o) { if (o.c.ouvert === false) compteur.removeChild(o.noeud); });
+    }
     return el('div', {}, [
-      enAttente.length ? el('p', { classe: 'encadre', texte: 'Avant une nouvelle demande, réponds à la question sur ' +
-        (enAttente.length > 1 ? 'les demandes ' : 'la demande ') + enAttente.join(', ') + ', plus haut.' }) : null,
       el('label', { for: 'date', texte: 'Date' }),
       // Le serveur donne la première date tenable : plus de calcul de tête. Sans elle, on rappelle la règle.
       aide('aide-date', e.premiereDatePossible
@@ -922,16 +1107,35 @@
         : e.mandate ? 'Avec ton mandat : au moins 24 heures avant, plus 2 jours ouvrés pour la cession.' : 'Sans mandat : au moins 8 jours ouvrés avant, plus 2 jours ouvrés pour la cession.'), date, aideAnnee,
       el('label', { for: 'objet', texte: 'Objet' }), objet, blocVisite,
       el('label', { for: 'heures', texte: 'Nombre d\'heures' }),
-      aide('aide-heures', 'Par demi-heures, ou par demi-journées de 3,75 h. Exemple : 7,5. Une demande couvre une journée au plus : 7,5 heures.'), nb,
-      el('label', { for: 'compteur', texte: 'Compteur' }), aideCompteur, compteur, blocDeplacement,
+      aide('aide-heures', 'Par demi-heures, ou par demi-journées de 3,75 h. Une demande couvre une journée au plus : 7,5 heures.'), nb,
+      el('div', { classe: 'ligne raccourcis' }, [raccourci('Journée (7,5 h)', '7,5'), raccourci('Demi-journée (3,75 h)', '3,75')])
+    ].concat(compteurUnique ? [
+      el('p', { id: 'compteur-unique', texte: 'Tes heures vont sur le compteur « ' + ouverts[0].libelle + ' » : sans mandat, c\'est le seul qui t\'est ouvert.' }), compteur
+    ] : [el('label', { for: 'compteur', texte: 'Compteur' }), aideCompteur, compteur], [blocDeplacement,
       el('div', { classe: 'case' }, [accord, el('label', { for: 'accord', texte: 'J\'accepte que le secrétaire procède à une cession d\'heures à mon nom, visible par le service des Relations Sociales de France Travail.' })]),
       envoyer, retour
-    ]);
+    ]));
+  }
+  /** Mène au formulaire de l'espace : le titre « Nouvelle demande » vient à l'écran, le champ de la date reçoit le focus. */
+  function allerAuFormulaire() {
+    if (typeof document === 'undefined' || !document.getElementById) return;
+    var titre = document.getElementById('nouvelle-demande');
+    var champ = document.getElementById('date');
+    if (titre && titre.scrollIntoView) titre.scrollIntoView();
+    var cible = champ || titre;
+    if (cible && cible.focus) cible.focus();
+  }
+  /** Mène à la carte d'une demande, dans l'espace : la carte vient à l'écran, son titre reçoit le focus. */
+  function allerACarte(id) {
+    var titre = typeof document !== 'undefined' && document.getElementById ? document.getElementById('titre-carte-' + id) : null;
+    if (!titre) return;
+    if (titre.scrollIntoView) titre.scrollIntoView();
+    if (titre.focus) titre.focus();
   }
 
   /** Changement de date refusé : la demande elle-même n'est pas refusée, on le dit. */
   var REPORTS = { date_passee_ou_du_jour: 'Choisis une date à venir.', date_inchangee: 'C\'est déjà la date de ta demande.', jour_non_ouvre: 'Ce jour n\'est pas ouvré.',
-    report_deja_utilise: 'Date déjà changée.', jour_j_ou_apres: 'Ce n\'est plus possible le jour même ni après.',
+    report_deja_utilise: 'Une demande ne change de date qu\'une fois.', jour_j_ou_apres: 'Ce n\'est plus possible le jour même ni après.',
     sans_mandat_a_la_date: 'La personne qui t\'accompagne n\'a pas de mandat à cette date.',
     // Le mandat se juge à la nouvelle date : la phrase ne parle pas d'aujourd'hui, et donne la marche à suivre.
     reserve_aux_titulaires_de_mandat: 'À cette date, tu n\'auras pas de mandat : ce compteur ne te sera plus ouvert. Annule cette demande et déposes-en une sur un compteur « tous ».',
@@ -950,6 +1154,110 @@
     return (REPORTS[r.detail] || r.refus.libelle.replace(/\.$/, '')).replace(/\.$/, '') + reference + garde;
   }
 
+  /**
+   * La question « cette activité a-t-elle eu lieu ? » sur une carte de l'espace, avec le second appui.
+   * o : { dateDemande ('jj/mm/aaaa' : la date d'utilisation est demandée et préremplie avec elle ; absente : pas de date,
+   * c'est l'accompagnant·e qui répond), deplacementPrevu, retour (zone des erreurs), agir (appel puis espace rechargé) }.
+   */
+  function questionEspace(id, o) {
+    var nodes = [];
+    // Décision du secrétaire : la date d'utilisation est préremplie avec la date de la demande, modifiable, bornes inchangées.
+    var utilise = o.dateDemande ? el('input', { type: 'date', id: 'utilise-' + id, max: aujourdhuiIso(), value: dateIso(o.dateDemande), 'aria-describedby': 'aide-utilise-' + id, 'aria-label': 'Jour où tu as utilisé les heures de la demande ' + id }) : null;
+    if (utilise) utilise.value = dateIso(o.dateDemande);
+    // Clé tirée au dessin de la carte : deux appuis rapides portent la même clé.
+    var cleOui = cleUnique();
+    var cleNon = cleUnique();
+    var atteste = el('input', { type: 'checkbox', id: 'attestation-' + id, 'aria-required': 'true' });
+    var commentaire = el('textarea', { id: 'commentaire-' + id, maxlength: String(COMMENTAIRE_MAX), 'aria-describedby': 'aide-commentaire-' + id });
+    var aideCommentaire = aide('aide-commentaire-' + id, AIDE_COMMENTAIRE + COMMENTAIRE_MAX + ' caractères au plus.');
+    var depOui = o.deplacementPrevu > 0 ? champDeplacementUtilise('-' + id, o.deplacementPrevu) : null;
+    var quoi = o.accompagnant ? 'la visite' : '';
+    nodes.push(el('p', { classe: 'encadre', texte: o.accompagnant ? 'À faire : la visite a-t-elle eu lieu ?' : 'À faire : cette activité a-t-elle eu lieu ?' }));
+    if (utilise) nodes.push(el('label', { for: 'utilise-' + id, texte: LIBELLE_UTILISATION }), aide('aide-utilise-' + id, AIDE_UTILISATION), utilise);
+    if (depOui) nodes.push.apply(nodes, depOui.bloc);
+    nodes.push(
+      el('label', { for: 'commentaire-' + id, texte: 'Commentaire (facultatif)' }),
+      aideCommentaire,
+      commentaire,
+      el('div', { classe: 'case' }, [atteste, el('label', { for: 'attestation-' + id, texte: 'J\'atteste que ma déclaration est exacte.' })]));
+    // Premier appui : la carte montre ce qui va être enregistré. Rien ne part avant « Envoyer ma réponse ».
+    var releve = el('div');
+    var boutonsReponse = [];
+    var champs = [commentaire, atteste].concat(utilise ? [utilise] : [], depOui ? [depOui.saisie] : []);
+    boutonsReponse.push(
+      bouton('Oui, elle a eu lieu', function () {
+        if (utilise && !utilise.value) return signaler(o.retour, ERREURS.date_utilisation_manquante);
+        if (depOui && !String(depOui.saisie.value || '').trim()) return signaler(o.retour, ERREURS.deplacement_utilise);
+        if (!atteste.checked) return signaler(o.retour, ERREURS.attestation_manquante);
+        vider(o.retour);
+        var le = utilise ? dateFr(utilise.value) : '';
+        // 8e : le déplacement utilisé, ou undefined ; 9e : l'avis « Lu par le bureau. » affiché sous le champ.
+        var args = [JETON, id, 'fait', commentaire.value, cleOui, le, atteste.checked === true, depOui ? depOui.saisie.value : undefined, avisAffiche(aideCommentaire)];
+        relire(releve, boutonsReponse, phraseReponse('fait', le, depOui ? depOui.saisie.value : null, quoi), 'Envoyer ma réponse',
+          o.agir('api_declarerEtatEspace', args, 'C\'est noté : elle a eu lieu.'), o.retour, champs, 'Envoyer ma réponse, demande ' + id);
+      }, '', 'Oui, elle a eu lieu, demande ' + id),
+      bouton('Non, elle n\'a pas eu lieu', function () {
+        if (!atteste.checked) return signaler(o.retour, ERREURS.attestation_manquante);
+        vider(o.retour);
+        relire(releve, boutonsReponse, phraseReponse('pas_fait', '', null, quoi), 'Envoyer ma réponse',
+          o.agir('api_declarerEtatEspace', [JETON, id, 'pas_fait', commentaire.value, cleNon, '', atteste.checked === true, undefined, avisAffiche(aideCommentaire)], 'C\'est noté : elle n\'a pas eu lieu.'), o.retour, champs, 'Envoyer ma réponse, demande ' + id);
+      }, '', 'Non, elle n\'a pas eu lieu, demande ' + id));
+    return nodes.concat(boutonsReponse, [releve]);
+  }
+  /**
+   * Corriger sa réponse, une seule fois (décision du secrétaire du 25/11/2026) : en second plan, deux appuis.
+   * Le premier dit ce qui va se passer ; le second efface la réponse, la carte revient à la question.
+   */
+  function corrigerReponse(id, retour, accompagnant) {
+    // Pour la personne seulement : la même phrase que le mail d'accusé (ACCUSE_CORRECTION), R2 bloque jusqu'à la nouvelle réponse.
+    var avertir = 'Tu peux corriger ta réponse une seule fois. Elle sera effacée et tu répondras de nouveau.' +
+      (accompagnant ? '' : ' Tant que tu n\'as pas répondu de nouveau, tu ne peux ni déposer ni confirmer une autre demande.');
+    var cle = cleUnique();
+    var zone = el('div');
+    var ouvrir = bouton('Corriger ma réponse', function () {
+      vider(retour);
+      ouvrir.hidden = true;
+      var texte = el('p', { tabindex: '-1', texte: avertir });
+      vider(zone).appendChild(el('div', { classe: 'encadre info' }, [texte,
+        bouton('Oui, effacer ma réponse', function (b) {
+          appel('api_corrigerEtat', [JETON, id, cle], function (r) {
+            // La carte où répondre de nouveau vient à l'écran et reçoit le focus.
+            if (r.ok) return vueEspace('Demande ' + id + ' : ta réponse est effacée. Réponds de nouveau.', true, id);
+            dire(retour, r);
+          }, b);
+        }, '', 'Oui, effacer ma réponse, demande ' + id),
+        bouton('Laisser comme ça', function () { vider(zone); ouvrir.hidden = false; ouvrir.focus(); }, 'second', 'Laisser ma réponse comme ça, demande ' + id)
+      ]));
+      texte.focus();
+      annoncer(avertir);
+    }, 'second', 'Corriger ma réponse, demande ' + id);
+    return el('div', {}, [ouvrir, zone]);
+  }
+  /**
+   * Une demande où la personne accompagne quelqu'un (liste « accompagnements » de l'espace) : ce que le lien d'état
+   * montre déjà, la question quand la réponse lui revient, et la correction une fois.
+   */
+  function carteAccompagnement(x) {
+    var retour = el('div');
+    var agir = function (nom, args, message) {
+      return function (b) {
+        appel(nom, args, function (r) {
+          if (r.ok) return vueEspace(message, true);
+          dire(retour, r);
+        }, b);
+      };
+    };
+    var lignes = [
+      el('h3', { classe: 'num', id: 'titre-carte-' + x.id, tabindex: '-1', texte: 'Demande ' + x.id + ', déposée par ' + x.pour }),
+      // Rien de l'état d'une demande d'autrui : la visite, sa date, et ce que l'accompagnant·e a à faire.
+      el('p', { texte: x.objet + (x.site ? ', ' + x.site : '') + ', le ' + x.dateFr + '.' })
+    ];
+    if (x.repondre) lignes.push.apply(lignes, questionEspace(x.id, { accompagnant: true, retour: retour, agir: agir }));
+    if (x.peutCorriger) lignes.push(corrigerReponse(x.id, retour, true));
+    lignes.push(retour);
+    return el('div', { classe: 'carte', id: 'carte-' + x.id }, lignes);
+  }
+
   function carte(d) {
     var retour = el('div');
     var agir = function (nom, args, message) {
@@ -961,16 +1269,17 @@
       };
     };
     var lignes = [
-      el('p', { classe: 'num', texte: 'Demande ' + d.id }),
+      el('h3', { classe: 'num', id: 'titre-carte-' + d.id, tabindex: '-1', texte: 'Demande ' + d.id }),
       el('p', { texte: resume(d) }),
-      el('p', { texte: 'État : ' + d.statutLibelle + (d.essai ? ' (avant le vote de la règle)' : '') + '.' })
+      el('p', { texte: 'État : ' + d.statutLibelle + (d.essai ? ' (déposée avant la date d\'effet des règles)' : '') + '.' })
     ];
     if (d.exercice && ANNEE && d.exercice !== ANNEE) lignes.push(el('p', { texte: 'Sur les heures ' + d.exercice + '.' }));
     if (d.attenteHeures) lignes.push(el('p', { texte: phraseReserve(d.exercice, d.reserve) }));
     else if (d.auDelaDesHeures) lignes.push(el('p', { texte: 'Ta demande est acceptée sous réserve : les heures ' + d.exercice + ' reçues par la section ne la couvrent pas encore. Le secrétaire la cède si les heures reçues le permettent.' }));
     if (d.statut === 'deposee') lignes.push(el('p', { classe: 'encadre', texte: 'À faire : ouvre le mail « Demande ' + d.id + ' à confirmer » et clique sur « Confirmer ma demande ».' }));
     if (d.refus) lignes.push(el('p', { texte: 'Motif : ' + phraseRefus(d.refus) }));
-    if (d.refusNonOppose) lignes.push(el('p', { texte: phraseEssai(d.refusNonOppose, 'ta demande') }));
+    // La phrase d'avant la date d'effet ne sort que tant que cette date est à venir : après, elle serait fausse.
+    if (d.refusNonOppose && ESSAI) lignes.push(el('p', { texte: phraseEssai(d.refusNonOppose, 'ta demande') }));
     var a = d.actions;
     if (d.accompagnePar) {
       lignes.push(el('p', { texte: 'Accompagné·e par ' + d.accompagnePar + '.' +
@@ -981,16 +1290,16 @@
     }
     if (d.utiliseLe) lignes.push(el('p', { texte: 'Heures utilisées le ' + d.utiliseLe + ', d\'après ta déclaration.' }));
     if (typeof d.deplacementUtilise === 'number') lignes.push(el('p', { texte: 'Déplacement utilisé : ' + heures(d.deplacementUtilise) + ' sur ' + heures(d.heuresDeplacement) + ', d\'après ta déclaration.' }));
-    if (d.reports) lignes.push(el('p', { texte: 'Date déjà changée.' }));
+    if (d.reports) lignes.push(el('p', { texte: 'Une demande ne change de date qu\'une fois.' }));
     // Le refus contesté a été levé entre-temps : la contestation n'a plus d'objet. Si un nouveau refus
     // est venu ensuite, la phrase serait fausse : on ne l'écrit pas, et le bouton suit le serveur.
     var sansObjet = !!d.contestation && d.contestation.statut === 'sans_objet';
     if (d.contestation && !(sansObjet && (d.statut === 'refusee' || d.statut === 'expiree'))) {
       lignes.push(el('p', { texte: d.contestation.statut === 'ouverte' ? 'Contestation en attente de la prochaine réunion du bureau.'
         : sansObjet ? 'Ta contestation est sans objet : le refus a été levé.'
-          : 'Le bureau a statué : ' + (d.contestation.decision === 'accueil' ? 'il t\'a donné raison' : 'il a maintenu la décision') + '.' +
+          : (d.contestation.decision === 'accueil' ? 'Le bureau t\'a donné raison.' : 'Le bureau a maintenu la décision.') +
             (d.contestation.restituee ? ' Les heures ont déjà été restituées : la demande ne se rouvre pas. La décision du bureau est notée au journal. Pour de nouvelles heures, dépose une nouvelle demande.' : '') +
-            (d.contestation.anneeClose ? ' Les heures ' + d.contestation.anneeClose + ' n\'existent plus depuis le 31/12 : la demande ne peut pas se rouvrir. La décision est notée au journal.' : '') +
+            (d.contestation.anneeClose ? ' Les heures ' + d.contestation.anneeClose + ' n\'existent plus depuis le 31/12/' + d.contestation.anneeClose + ' : la demande ne peut pas se rouvrir. La décision du bureau est notée au journal.' : '') +
             (d.contestation.mainRendue ? (d.statut === 'valide' ? ' Le secrétaire va te céder de nouveau les heures. Tu réponds ensuite.' : ' C\'est à toi de répondre.') : '') }));
     }
     if (d.statut === 'close') {
@@ -998,52 +1307,29 @@
         ? 'Cette demande est close : les heures ' + d.exercice + ' n\'existent plus depuis le 31/12. Aucune réponse n\'est attendue.'
         : 'Le secrétaire a clos cette demande : aucune réponse n\'a pu être donnée. Les heures reviennent à la section si l\'absence n\'a pas été posée chez l\'employeur.' }));
     }
-    if (a.declarer) {
-      var utilise = el('input', { type: 'date', id: 'utilise-' + d.id, max: aujourdhuiIso(), 'aria-describedby': 'aide-utilise-' + d.id, 'aria-label': 'Jour où tu as utilisé les heures de la demande ' + d.id });
-      // Clé tirée au dessin de la carte : deux appuis rapides sur « Oui » portent la même clé.
-      var cleOui = cleUnique();
-      var cleNon = cleUnique();
-      var atteste = el('input', { type: 'checkbox', id: 'attestation-' + d.id, 'aria-required': 'true' });
-      var commentaire = el('textarea', { id: 'commentaire-' + d.id, maxlength: String(COMMENTAIRE_MAX), 'aria-describedby': 'aide-commentaire-' + d.id });
-      var depOui = d.deplacementPrevu > 0 ? champDeplacementUtilise('-' + d.id, d.deplacementPrevu) : null;
-      lignes.push(el('p', { classe: 'encadre', texte: 'À faire : cette activité a-t-elle eu lieu ?' }),
-        el('label', { for: 'utilise-' + d.id, texte: LIBELLE_UTILISATION }),
-        aide('aide-utilise-' + d.id, AIDE_UTILISATION), utilise);
-      if (depOui) lignes.push.apply(lignes, depOui.bloc);
-      lignes.push(
-        el('label', { for: 'commentaire-' + d.id, texte: 'Commentaire (facultatif)' }),
-        aide('aide-commentaire-' + d.id, 'Ne nomme personne, n\'écris rien sur la santé ou la vie privée. ' + COMMENTAIRE_MAX + ' caractères au plus.'),
-        commentaire,
-        el('div', { classe: 'case' }, [atteste, el('label', { for: 'attestation-' + d.id, texte: 'J\'atteste que ma déclaration est exacte.' })]),
-        bouton('Oui, elle a eu lieu', function (b) {
-          if (!utilise.value) return vider(retour).appendChild(erreur(ERREURS.date_utilisation_manquante));
-          if (depOui && !String(depOui.saisie.value || '').trim()) return vider(retour).appendChild(erreur(ERREURS.deplacement_utilise));
-          if (!atteste.checked) return vider(retour).appendChild(erreur(ERREURS.attestation_manquante));
-          agir('api_declarerEtatEspace', function () {
-            var args = [JETON, d.id, 'fait', commentaire.value, cleOui, dateFr(utilise.value), atteste.checked === true];
-            if (depOui) args.push(depOui.saisie.value);
-            return args;
-          }, 'C\'est noté : elle a eu lieu.')(b);
-        }, '', 'Oui, elle a eu lieu, demande ' + d.id),
-        bouton('Non, elle n\'a pas eu lieu', function (b) {
-          if (!atteste.checked) return vider(retour).appendChild(erreur(ERREURS.attestation_manquante));
-          agir('api_declarerEtatEspace', function () { return [JETON, d.id, 'pas_fait', commentaire.value, cleNon, '', atteste.checked === true]; }, 'C\'est noté : elle n\'a pas eu lieu.')(b);
-        }, '', 'Non, elle n\'a pas eu lieu, demande ' + d.id));
-    }
+    if (a.declarer) lignes.push.apply(lignes, questionEspace(d.id, { dateDemande: d.dateFr, deplacementPrevu: d.deplacementPrevu, retour: retour, agir: agir }));
+    if (d.peutCorriger) lignes.push(corrigerReponse(d.id, retour));
     if (a.declarerDeplacement) {
       var depApres = champDeplacementUtilise('-apres-' + d.id, d.deplacementPrevu || d.heuresDeplacement);
       var attesteDep = el('input', { type: 'checkbox', id: 'attestation-deplacement-' + d.id, 'aria-required': 'true' });
       var cleDep = cleUnique();
-      var blocDep = el('div', {}, depApres.bloc.concat([
+      var prevuDep = d.deplacementPrevu || d.heuresDeplacement;
+      var releveDep = el('div');
+      var declarerDep = bouton('Déclarer mon déplacement', function () {
+        if (!String(depApres.saisie.value || '').trim()) return signaler(retour, ERREURS.deplacement_utilise);
+        if (!attesteDep.checked) return signaler(retour, ERREURS.attestation_manquante);
+        vider(retour);
+        var valeur = depApres.saisie.value;
+        // La déclaration se fait une seule fois : relue avant de partir.
+        relire(releveDep, [declarerDep], 'Tu déclares : ' + heures(String(valeur).trim()) + ' de déplacement utilisées sur ' + heures(prevuDep) + ' prévues.', 'Envoyer ma déclaration',
+          agir('api_declarerDeplacement', [JETON, d.id, valeur, attesteDep.checked === true, cleDep], 'C\'est noté : ton déplacement est enregistré.'), retour,
+          [depApres.saisie, attesteDep], 'Envoyer ma déclaration, demande ' + d.id);
+      }, '', 'Déclarer mon déplacement, demande ' + d.id);
+      // Deux boutons, deux noms : « Déclarer mon déplacement » montre la déclaration, « Envoyer ma déclaration » l'enregistre.
+      lignes.push(el('div', {}, depApres.bloc.concat([
         el('div', { classe: 'case' }, [attesteDep, el('label', { for: 'attestation-deplacement-' + d.id, texte: 'J\'atteste que ma déclaration est exacte.' })]),
-        bouton('Enregistrer mon déplacement', function (b) {
-          if (!String(depApres.saisie.value || '').trim()) return vider(retour).appendChild(erreur(ERREURS.deplacement_utilise));
-          if (!attesteDep.checked) return vider(retour).appendChild(erreur(ERREURS.attestation_manquante));
-          agir('api_declarerDeplacement', function () { return [JETON, d.id, depApres.saisie.value, attesteDep.checked === true, cleDep]; }, 'C\'est noté : ton déplacement est enregistré.')(b);
-        }, '', 'Enregistrer mon déplacement, demande ' + d.id)
-      ]));
-      blocDep.hidden = true;
-      lignes.push(bouton('Déclarer mon déplacement', function (b) { blocDep.hidden = false; b.remove(); depApres.saisie.focus(); }, 'second', 'Déclarer mon déplacement, demande ' + d.id), blocDep);
+        declarerDep, releveDep
+      ])));
     }
     if (a.reporter) {
       var nouvelle = el('input', { type: 'date', id: 'report-' + d.id, max: d.exercice ? d.exercice + '-12-31' : null });
@@ -1053,20 +1339,24 @@
         el('label', { for: 'report-' + d.id, texte: 'Nouvelle date' }),
         el('p', { classe: 'aide', texte: 'Tu peux changer la date une seule fois, avant le jour prévu, dans la même année.' }), nouvelle,
         bouton('Valider la nouvelle date', function (b) {
-          if (!nouvelle.value) return vider(retour).appendChild(erreur('Choisis la nouvelle date.'));
+          if (!nouvelle.value) return signaler(retour, 'Choisis la nouvelle date.');
           appel('api_reporter', [JETON, d.id, dateFr(nouvelle.value), cleReport], function (r) {
             if (r.ok) {
-              return vueEspace('Demande ' + d.id + ' : nouvelle date, le ' + r.nouvelleDate + '.' +
-                (r.refusNonOppose ? ' ' + phraseEssai(r.refusNonOppose, 'le changement de date') : ''), true);
+              var essai = r.refusNonOppose && ESSAI ? phraseEssai(r.refusNonOppose, 'le changement de date') : '';
+              return vueEspace('Demande ' + d.id + ' : nouvelle date, le ' + r.nouvelleDate + '.' + (essai ? ' ' + essai : ''), true);
             }
             if (r.erreur === 'lien') return lienInvalide();
-            vider(retour).appendChild(erreur(phraseReport(r, d)));
+            signaler(retour, phraseReport(r, d));
           }, b);
         }, '', 'Valider la nouvelle date de la demande ' + d.id)]);
       bloc.hidden = true;
       lignes.push(bouton('Changer la date', function (b) { bloc.hidden = false; b.remove(); nouvelle.focus(); }, 'second', 'Changer la date de la demande ' + d.id), bloc);
     }
     if (a.annuler) lignes.push(deuxTemps('Annuler la demande', agir('api_annuler', [JETON, d.id, cleUnique()], 'Demande ' + d.id + ' annulée.'), { nom: 'Annuler la demande ' + d.id }));
+    // Après un refus, la suite simple d'abord : une nouvelle demande. La contestation vient ensuite.
+    if (d.statut === 'refusee' || d.statut === 'expiree') {
+      lignes.push(bouton('Déposer une nouvelle demande', function () { allerAuFormulaire(); }, '','Déposer une nouvelle demande, après la demande ' + d.id));
+    }
     if (a.contester) {
       var contester = a.contester === 'refus' ? 'Contester le refus' : 'Contester l\'état';
       lignes.push(deuxTemps(contester, agir('api_contester', [JETON, d.id, a.contester, cleUnique()], 'Contestation enregistrée. Le bureau statue à sa réunion suivante.'), { nom: contester + ', demande ' + d.id }));
@@ -1076,12 +1366,13 @@
   }
 
   /** garder : ne pas blanchir l'écran pendant le rechargement. message : un texte, ou { texte, genre }. */
-  function vueEspace(message, garder) {
+  function vueEspace(message, garder, carteVisee) {
     if (!garder) attente('Ton espace');
     appel('api_espace', [JETON], function (e) {
       if (!e.ok) return e.erreur === 'lien' ? lienInvalide() : page('Ton espace', [panne()]);
       regle = e.versionRegle;
       DATE_EFFET = e.dateEffet || '';
+      ESSAI = !!e.essai;
       ANNEE = e.exerciceCourant || '';
       if (typeof e.commentaireMax === 'number') COMMENTAIRE_MAX = e.commentaireMax;
       if (typeof e.confirmationHeures === 'number') CONFIRMATION_HEURES = e.confirmationHeures;
@@ -1101,12 +1392,13 @@
           sortie.appendChild(el('details', {}, [el('summary', { texte: 'Version complète, pour une demande d\'accès à tes données' }), brut]));
         }, b);
       }, 'second');
-      var idee = el('textarea', { id: 'idee', maxlength: '500' });
+      var idee = el('textarea', { id: 'idee', maxlength: '500', 'aria-describedby': 'aide-idee' });
+      var aideIdee = aide('aide-idee', AVIS_BUREAU);
       var retourIdee = el('div');
       var proposer = bouton('Envoyer la proposition', function (b) {
-        appel('api_proposer', [JETON, idee.value], function (r) {
+        appel('api_proposer', [JETON, idee.value, avisAffiche(aideIdee)], function (r) {
           vider(retourIdee);
-          if (!r.ok) return retourIdee.appendChild(erreur(phraseErreur(r)));
+          if (!r.ok) return signaler(retourIdee, phraseErreur(r));
           retourIdee.appendChild(encart('Proposition enregistrée.', 'reussite'));
           annoncer('Proposition enregistrée.');
           idee.value = '';
@@ -1118,20 +1410,26 @@
       // D'abord ce qui attend un geste de la personne, puis le reste, dans l'ordre reçu.
       var triees = e.demandes.filter(attendUnGeste).concat(e.demandes.filter(function (d) { return !attendUnGeste(d); }));
       var demandes = triees.length ? [el('h2', { texte: 'Tes demandes' }), el('div', {}, triees.map(carte))] : [];
-      // Une demande passée sans réponse, avant le formulaire : le texte de R2, et la carte où répondre.
-      var attendues = (e.reponsesAttendues || []).map(function (x) {
-        return el('div', { classe: 'encadre' }, [el('p', { texte: x.texte }),
-          bouton('Aller à la demande ' + x.id, function () {
-            var c = typeof document !== 'undefined' && document.getElementById ? document.getElementById('carte-' + x.id) : null;
-            if (c && c.scrollIntoView) c.scrollIntoView();
-          }, 'second', 'Aller à la demande ' + x.id)]);
-      });
-      var nouvelle = attendues.concat([el('h2', { texte: 'Nouvelle demande' }),
+      // Les demandes où la personne accompagne quelqu'un : la réponse à donner, ou à corriger une fois.
+      var accompagnements = (e.accompagnements || []).length
+        ? [el('h2', { texte: 'Tes accompagnements' }), el('div', {}, e.accompagnements.map(carteAccompagnement))] : [];
+      // Une demande cédée, date dépassée, sans réponse : un seul encadré, le texte de R2 (Messages.phraseR2) et le bouton
+      // qui mène à la carte où répondre. Quand les règles s'opposent, il prend la place du formulaire : un dépôt serait refusé.
+      var reponses = e.reponsesAttendues || [];
+      var attendue = reponses.length ? el('div', { classe: 'encadre', id: 'reponse-attendue' }, [].concat.apply([], reponses.map(function (x) {
+        return [el('p', { texte: x.texte }),
+          bouton('Aller à la demande ' + x.id, function () { allerACarte(x.id); }, '', 'Aller à la demande ' + x.id)];
+      }))) : null;
+      var bloque = !!attendue && !e.essai;
+      var nouvelle = [el('h2', { id: 'nouvelle-demande', tabindex: '-1', texte: 'Nouvelle demande' }), attendue].concat(bloque ? [] : [
         el('p', { classe: 'aide', texte: 'Les règles sont les mêmes pour tout le monde, secrétaire compris.' }), formulaire(e)]);
+      // Page plus ancienne que le serveur (page d'entrée pas encore redéposée, onglet resté ouvert pendant une mise à jour).
+      var perimee = encadreVersion(e.versionServeur);
       // Sa fiche et son lien sont faits : il ne peut rester que les heures de la section.
       var reste = m && !m.heures;
 
       page('Ton espace', [
+        perimee,
         el('p', { texte: 'Bonjour ' + e.prenom + '.' }),
         annonce(message),
         e.roles.admin ? el('div', { classe: reste ? 'encadre' : 'encadre info' }, [
@@ -1139,14 +1437,16 @@
           bouton('Gérer la section', function () { ouvrirGestion(reste ? 'route' : 'gestion'); })
         ]) : null,
         e.roles.bureau ? el('p', {}, [bouton('Suivi pour le bureau', vueBureau, 'second')]) : null,
-        e.essai ? el('p', { classe: 'encadre info', texte: bandeauAvantVote(e.dateEffet) }) : null
-      ].concat(demandes, nouvelle, [
+        e.essai ? el('p', { classe: 'encadre info', texte: bandeauAvantDateEffet(e.dateEffet) }) : null
+      ].concat(demandes, accompagnements, nouvelle, [
         el('div', { classe: 'suite' }, [
           el('details', {}, [el('summary', { texte: 'Tes données' }), el('p', { texte: e.mention }), voir, sortie]),
           el('details', {}, [el('summary', { texte: 'Proposer une amélioration' }),
-            el('label', { for: 'idee', texte: 'Ta proposition' }), idee, proposer, retourIdee])
+            el('label', { for: 'idee', texte: 'Ta proposition' }), aideIdee, idee, proposer, retourIdee])
         ])
       ]));
+      // Après une correction : la carte où répondre de nouveau vient à l'écran et reçoit le focus.
+      if (carteVisee) allerACarte(carteVisee);
     });
   }
 
@@ -1159,7 +1459,7 @@
     CHANTIER_OUVERT: 'Chantier ouvert', CHANTIER_CLOS: 'Chantier fermé', LIEN_REVOQUE: 'Lien coupé',
     PERSONNE_AJOUTEE: 'Fiche créée', PERSONNE_MODIFIEE: 'Fiche corrigée', PERSONNE_SUPPRIMEE: 'Fiche supprimée', EXPORT_LISTE: 'Liste exportée'
   };
-  var MOTIFS_GESTES = { R5: 'plus d\'heures reçues', fiche_desactivee: 'fiche désactivée', annee_close: 'année close', PRIORITES: 'priorités votées', CHANTIER_CLOS: 'chantier fermé', DOUBLON: 'doublon', accueil: 'raison donnée à la personne', maintien: 'décision maintenue',
+  var MOTIFS_GESTES = { R5: 'plus d\'heures reçues', fiche_desactivee: 'fiche désactivée', annee_close: 'année close', PRIORITES: 'priorités de la section', CHANTIER_CLOS: 'chantier fermé', DOUBLON: 'doublon', accueil: 'raison donnée à la personne', maintien: 'décision maintenue',
     R1: 'demande arrivée trop tard', R6: 'demande pas confirmée à temps', CIRCONSTANCE_EXCEPTIONNELLE: 'circonstance exceptionnelle' };
   var ETATS_VISITE = { a_venir: 'à venir', attente_etat: 'en attente de l\'état de réalisation', faite: 'faite', pas_faite: 'pas faite' };
   function valeurReglage(cle, v) {
@@ -1249,7 +1549,9 @@
           { titre: 'Objet', cle: 'objet', type: 'nom' }, { titre: 'Heures', cle: 'heures', type: 'nombre' }, { titre: 'Dont déplacement', cle: 'deplacement', type: 'nom' }, { titre: 'État', cle: 'etat', type: 'nom' },
           { titre: 'Utilisées le', cle: 'utiliseLe', type: 'fixe' },
           { titre: 'Accompagné·e par', cle: 'accompagnePar', type: 'nom' }, { titre: 'Refus', cle: 'refus' }, { titre: 'Dérogations', cle: 'derogations' },
-          { titre: 'Contestation', cle: 'contestation', type: 'nom' }
+          { titre: 'Contestation', cle: 'contestation', type: 'nom' },
+          // Le commentaire de la réponse, lu par le bureau (décision du secrétaire du 25/11/2026). Vide sans commentaire.
+          { titre: 'Commentaire', cle: 'commentaire', type: 'texte' }
         ].concat(choisie ? [{ titre: 'Année', cle: 'exercice', type: 'fixe' }] : []), v.journal.filter(function (j) { return !choisie || !j.exercice || j.exercice === choisie; }), 'Toutes les demandes'));
       };
       if (choix) choix.addEventListener('change', function () { choisie = choix.value; dessiner(); });
@@ -1258,7 +1560,7 @@
         retourEspace(),
         el('p', { texte: 'Tout ce que la section a cédé, demande par demande, et tout ce que le secrétaire a fait. Tu ne peux rien modifier ici.' }),
         el('p', { classe: 'aide', texte: 'Sur téléphone, fais glisser un tableau vers la gauche pour voir la suite.' }),
-        v.essai ? el('p', { classe: 'encadre info', texte: bandeauAvantVote('') }) : null,
+        v.essai ? el('p', { classe: 'encadre info', texte: bandeauAvantDateEffet(v.dateEffet || DATE_EFFET) }) : null,
         choix ? el('label', { for: 'b-annee', texte: 'Année' }) : null, choix,
         haut,
         el('h2', { texte: 'Demandes dont le secrétaire n\'a pas encore cédé les heures' }),
@@ -1268,6 +1570,8 @@
         bas,
         el('h2', { texte: 'Ce que le secrétaire a fait' }),
         tableau([{ titre: 'Date', cle: 'date', type: 'fixe' }, { titre: 'Geste', cle: 'geste', type: 'nom' }, { titre: 'Demande', cle: 'demande', type: 'fixe' }, { titre: 'Motif', cle: 'motif', type: 'nom' }], gestes, 'Ce que le secrétaire a fait', 'm'),
+        // Les propositions reçues, sans auteur·e (version 0.15.0).
+        el('div', {}, blocPropositions(v.propositions || [])),
         v.rapprochement.date ? el('p', { texte: 'Dernier rapprochement avec le classeur de référence le ' + dateFr(v.rapprochement.date) + '. Cessions sans demande : ' + v.rapprochement.cessionsSansDemande + '.' }) : null,
         el('details', {}, [
           el('summary', { texte: 'Vérifier que le journal n\'a pas été réécrit' }),
@@ -1303,21 +1607,29 @@
     appel('api_personnes', [JETON], fin('personnes'));
   }
   var ECRANS = {};
-  function aller(cible, arg, message) { (ECRANS[cible] || ECRANS.gestion)(message || '', arg); }
+  // L'écran du secrétaire affiché, avec son argument : un geste qui y revient ne fait pas remonter la page.
+  var ecranCourant = '';
+  function aller(cible, arg, message) {
+    ecranCourant = (ECRANS[cible] ? cible : 'gestion') + '|' + (arg || '');
+    (ECRANS[cible] || ECRANS.gestion)(message || '', arg);
+  }
   function ouvrirGestion(cible, arg, message) { attente('Gérer la section'); chargerGestion(function () { aller(cible, arg, message); }); }
-  /** Après un geste réussi : recharger sans blanchir, puis afficher l'écran voulu avec son message. textes : les erreurs dites avec les mots de l'écran. */
+  /**
+   * Après un geste réussi : recharger sans blanchir, puis afficher l'écran voulu avec son message. textes : les erreurs dites avec les mots de l'écran.
+   * Le même écran revient (geste dans une liste) : la page reste à l'endroit du geste. Un autre écran : elle remonte en haut.
+   */
   function suiteGeste(cible, arg, message, zone, textes) {
+    var meme = cible + '|' + (arg || '') === ecranCourant;
     return function (r) {
       if (!r.ok) return dire(zone, r, textes);
-      chargerGestion(function () { aller(cible, arg, typeof message === 'function' ? message(r) : message); });
+      chargerGestion(function () { garderPosition = meme; aller(cible, arg, typeof message === 'function' ? message(r) : message); });
     };
   }
   /** Adresse déjà portée par une autre fiche : dire laquelle, et proposer d'y aller, ou la sortie donnée par l'écran. */
   function direAdressePrise(zone, chez, sortie) {
-    vider(zone).appendChild(el('div', { classe: 'message erreur', role: 'alert' }, [
+    signaler(zone, el('div', { classe: 'message erreur', role: 'alert', tabindex: '-1' }, [
       el('p', { texte: 'Cette adresse est déjà sur une autre fiche : ' + chez.nom + ' ' + chez.prenom + ' (' + chez.id + ').' })
     ].concat(sortie || [bouton('Ouvrir cette fiche', function () { aller('fiche', chez.id); }, 'second')])));
-    zone.scrollIntoView();
   }
   /** Trois étapes obligatoires : sa fiche, son lien, les heures de la section. Les personnes et les chantiers viennent ensuite, sans rouvrir la mise en route. */
   function routeFinie() { var m = G.tableau.miseEnRoute; return m.fiche && m.lien && m.heures; }
@@ -1367,7 +1679,7 @@
       routeFinie() ? el('p', { texte: 'Si le bureau en a décidé, ouvre des chantiers. Sans chantier ouvert, seules les visites de sites se demandent. ' +
         pluriel(m.chantiers, 'chantier ouvert', 'chantiers ouverts') + '.' }) : null,
       routeFinie() ? el('p', {}, [bouton('Voir les chantiers', function () { aller('chantiers'); }, 'second')]) : null,
-      pret ? el('p', {}, [bouton('Aller à « Gérer la section »', function () { aller('gestion'); }, 'second'), bouton('Aller à mon espace', function () { vueEspace(''); }, 'second')]) : null
+      pret ? el('p', {}, [bouton('Aller à « Gérer la section »', function () { aller('gestion'); }, 'second'), bouton('Revenir à mon espace', function () { vueEspace(''); }, 'second')]) : null
     ]);
   };
 
@@ -1393,12 +1705,16 @@
     var t = G.tableau, m = t.miseEnRoute;
     var faisables = t.aSaisir.filter(function (l) { return !l.attenteHeures; });
     var enAttente = t.aSaisir.filter(function (l) { return l.attenteHeures; });
-    var jour = faisables.length + t.aRestituer.length + t.contestations.length + (t.aClore || []).length;
+    var leves = (t.derogeables || []).length;
+    // Le compte vient du serveur (travailDuJour, version 0.15.0), refus à lever compris. Un serveur ancien ne le donne pas : la page compte.
+    var jour = typeof t.travailDuJour === 'number' ? t.travailDuJour
+      : faisables.length + t.aRestituer.length + t.contestations.length + (t.aClore || []).length + leves;
     var attend = [];
     if (faisables.length) attend.push(pluriel(faisables.length, 'cession à saisir', 'cessions à saisir'));
     if (t.aRestituer.length) attend.push(pluriel(t.aRestituer.length, 'restitution', 'restitutions'));
     if (t.contestations.length) attend.push(pluriel(t.contestations.length, 'décision du bureau à noter', 'décisions du bureau à noter'));
     if ((t.aClore || []).length) attend.push(pluriel(t.aClore.length, 'demande à clore', 'demandes à clore'));
+    if (leves) attend.push(pluriel(leves, 'refus que tu peux lever', 'refus que tu peux lever'));
     var entree = function (libelle, cible, principal) { return el('p', {}, [bouton(libelle, function () { aller(cible); }, principal ? '' : 'second')]); };
     // Rempli après coup, seulement si un point de l'état de l'outil ne va pas.
     var alerteEtat = el('div');
@@ -1427,10 +1743,13 @@
   };
 
   // --- état de l'outil : ce que l'outil fait seul, en lecture seule
-  var NOMS_ETAT = { passage: 'le passage de nuit', sauvegarde: 'la sauvegarde', mails: 'les mails', journal: 'le journal' };
+  var NOMS_ETAT = { passage: 'le passage de nuit', sauvegarde: 'la sauvegarde', mails: 'les mails', journal: 'le journal',
+    taille: 'la taille du journal', heures: 'les heures de l\'année à saisir' };
   var PREVENIR = 'Préviens la personne qui t\'aide à tenir l\'outil.';
   /** « 3 h 05 » à partir de « 03:05 ». */
   function heureFr(h) { var p = String(h).split(':'); return Number(p[0]) + ' h ' + (p[1] || '00'); }
+  /** « 5 000 » à partir de 5000 : les milliers séparés par une espace insécable. */
+  function nombreFr(n) { return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ' '); }
   function quandFr(q) { return 'le ' + q.date + ' à ' + heureFr(q.heure); }
   ECRANS.etat = function (message) {
     attente('État de l\'outil');
@@ -1471,7 +1790,7 @@
         el('p', { texte: 'Ce que l\'outil fait seul, chaque nuit et à chaque envoi. Cet écran ne change rien.' }),
         el('p', { classe: n ? 'encadre' : 'encadre info', texte: n ? (n > 1 ? n + ' points ne vont pas.' : 'Un point ne va pas.') : 'Tout va bien.' }),
         nuit(p.passage, 'Passage de nuit', { etat: 'aucun passage réussi', texte: 'Aucun passage réussi pour l\'instant.', attendu: 'Premier passage attendu cette nuit.' }, 'Dernier passage réussi',
-          'Chaque nuit, l\'outil éteint les demandes non confirmées, envoie les relances, ton récapitulatif et les mails en attente.'),
+          'Chaque nuit, l\'outil annule les demandes non confirmées à temps, envoie les relances, ton récapitulatif et les mails en attente.'),
         nuit(p.sauvegarde, 'Sauvegarde', { etat: 'aucune sauvegarde réussie', texte: 'Aucune sauvegarde réussie pour l\'instant.', attendu: 'Première sauvegarde attendue cette nuit.' }, 'Dernière sauvegarde réussie',
           'Chaque nuit, une copie des classeurs est gardée. Les sept dernières restent.'),
         carte(m, 'Mails', etatMails, lignesMails),
@@ -1484,7 +1803,16 @@
           el('p', { texte: l.sansLien ? pluriel(l.sansLien, 'personne active n\'a pas de lien en vigueur', 'personnes actives n\'ont pas de lien en vigueur') + '. Sans lien, on ne peut rien demander.' : 'Chaque personne active a un lien en vigueur.' }),
           el('p', {}, [bouton('Ouvrir « Personnes et liens »', function () { aller('personnes'); }, 'second')])
         ]),
-        el('div', { classe: 'carte' }, [el('p', { classe: 'num', texte: 'Version de l\'outil : ' + p.version.version })])
+        el('div', { classe: 'carte' }, [el('p', { classe: 'num', texte: 'Version de l\'outil : ' + p.version.version }),
+          encadreVersion(p.version.version)]),
+        // Deux points ajoutés par le serveur 0.15.0. Un serveur ancien ne les donne pas : pas de carte.
+        p.taille ? carte(p.taille, 'Taille du journal', p.taille.defaut ? 'plus de ' + nombreFr(p.taille.seuil) + ' lignes' : '', [
+          el('p', { texte: 'Le journal compte ' + nombreFr(p.taille.lignes) + (p.taille.lignes > 1 ? ' lignes' : ' ligne') + '. Au-delà de ' + nombreFr(p.taille.seuil) + ' lignes, l\'outil peut ralentir.' })
+        ]) : null,
+        p.heures ? carte(p.heures, 'Heures ' + p.heures.annee, p.heures.defaut ? 'à saisir' : '', [
+          el('p', { texte: p.heures.defaut ? 'Heures ' + p.heures.annee + ' à saisir : aucune heure reçue n\'est saisie pour l\'année.' : 'Des heures reçues sont saisies pour ' + p.heures.annee + '.' }),
+          p.heures.defaut ? el('p', {}, [bouton('Ouvrir « Heures de la section »', function () { aller('heures'); }, 'second')]) : null
+        ], 'Ajoute les heures ' + p.heures.annee + ' dès que la section les reçoit.') : null
       ]);
     });
   };
@@ -1525,7 +1853,8 @@
       return l.exercice < t.exerciceCourant ? ' Heures ' + l.exercice + ', année close.' : ' Heures ' + l.exercice + '.';
     };
     var decrire = function (l) {
-      return [el('p', { classe: 'num', texte: l.personne + ', le ' + l.date }),
+      // Cession dont la date est passée (version 0.15.0) : le secrétaire la fait quand même. La mention suit la date, sans autre geste.
+      return [el('h3', { classe: 'num', texte: l.personne + ', le ' + l.date + (l.nature === 'cession' && l.datePassee ? ', date passée' : '') }),
         el('p', { texte: (l.part === 'deplacement' ? heures(l.heures) + ' de déplacement sur « ' + l.compteur + ' »' : heures(l.heures) + ' sur « ' + l.compteur + ' »' + partDeplacement(l)) + '. ' + l.libelle + '. Demande ' + l.demande + ', ' + depuis(l) + '.' + annee(l) }),
         l.auDelaDesHeures ? el('p', { classe: 'encadre info', texte: 'Au-delà des heures reçues. À toi de décider.' }) : null];
     };
@@ -1563,6 +1892,7 @@
       }
       return el('div', { classe: 'carte' }, decrire(l).concat([
         l.origine === 'close' ? el('p', { texte: 'Demande close sans réponse : la fiche est désactivée.' }) : null,
+        l.commentaire ? el('p', { texte: 'Commentaire de la réponse : « ' + l.commentaire + ' »' }) : null,
         l.contestee ? el('p', { classe: 'aide', texte: 'Une contestation est ouverte sur cette demande : la décision du bureau d\'abord.' }) : deuxTemps('J\'ai fait la restitution chez l\'employeur', fait('api_saisir', [l.demande, nature('restitution')], l.demande + ' : restitution faite, c\'est noté.'),
           { classe: '', nom: nomGeste('J\'ai fait la restitution chez l\'employeur') }),
         l.contestee ? null : deuxTemps('Rien à restituer : l\'absence était déjà posée', fait('api_saisir', [l.demande, nature('absence_deja_posee')], l.demande + ' : heures consommées, c\'est noté.'),
@@ -1575,7 +1905,7 @@
       var cles = Object.keys(t.motifsDerogation);
       var unSeul = cles.length === 1;
       var motif = unSeul ? null : el('select', { 'aria-label': 'Motif pour ' + d.demande }, [option('', 'Choisis un motif')].concat(liste(t.motifsDerogation)));
-      return el('div', { classe: 'carte' }, [el('p', { classe: 'num', texte: d.personne }),
+      return el('div', { classe: 'carte' }, [el('h3', { classe: 'num', texte: d.personne }),
         el('p', { texte: 'Demande ' + d.demande + ' : ' + (d.code === 'R1' ? 'arrivée trop tard.' : 'pas confirmée à temps.') }),
         unSeul ? el('p', { texte: 'Motif : ' + t.motifsDerogation[cles[0]] }) : null,
         el('div', { classe: 'ligne' }, [motif, deuxTemps('Lever ce refus',
@@ -1583,26 +1913,26 @@
           { nom: 'Lever ce refus, demande ' + d.demande })])]);
     });
     var decisions = t.contestations.map(function (c) {
-      return el('div', { classe: 'carte' }, [el('p', { classe: 'num', texte: c.personne }),
+      return el('div', { classe: 'carte' }, [el('h3', { classe: 'num', texte: c.personne }),
         el('p', { texte: 'Demande ' + c.demande + ' : conteste ' + (c.objet === 'refus' ? 'un refus.' : 'un état.') }),
         c.suite === 'cedee' ? el('p', { classe: 'aide', texte: 'Si tu notes que le bureau lui donne raison, la demande se rouvre : la personne répond elle-même.' }) : null,
         c.suite === 'valide' ? el('p', { classe: 'aide', texte: 'Les heures sont déjà restituées chez l\'employeur. Si tu notes que le bureau lui donne raison, la demande repasse en attente de cession : tu les cèdes de nouveau.' }) : null,
         c.suite === 'aucune' ? el('p', { classe: 'aide', texte: c.anneeClose
-          ? 'Les heures ' + c.anneeClose + ' n\'existent plus depuis le 31/12 : la demande ne peut pas se rouvrir. La décision est notée au journal.'
-          : c.restituee ? 'Les heures ont déjà été restituées : la demande ne se rouvre pas. Ta décision est notée au journal. Pour de nouvelles heures, la personne dépose une nouvelle demande.'
-          : 'Cette demande ne peut pas se rouvrir. Ta décision est notée au journal, rien ne change sur la demande.' }) : null,
+          ? 'Les heures ' + c.anneeClose + ' n\'existent plus depuis le 31/12/' + c.anneeClose + ' : la demande ne peut pas se rouvrir. La décision du bureau est notée au journal.'
+          : c.restituee ? 'Les heures ont déjà été restituées : la demande ne se rouvre pas. La décision du bureau est notée au journal. Pour de nouvelles heures, la personne dépose une nouvelle demande.'
+          : 'Cette demande ne peut pas se rouvrir. La décision du bureau est notée au journal, rien ne change sur la demande.' }) : null,
         deuxTemps('Le bureau donne raison à la personne', decider(c, 'accueil'), { nom: 'Le bureau donne raison à la personne, demande ' + c.demande }),
         deuxTemps('Le bureau maintient la décision', decider(c, 'maintien'), { nom: 'Le bureau maintient la décision, demande ' + c.demande })]);
     });
     var carteAClore = function (l) {
-      return el('div', { classe: 'carte' }, [el('p', { classe: 'num', texte: l.personne + ', le ' + l.date }),
+      return el('div', { classe: 'carte' }, [el('h3', { classe: 'num', texte: l.personne + ', le ' + l.date }),
         el('p', { texte: heures(l.heures) + ' sur « ' + l.compteur + ' »' + partDeplacement(l) + '. Demande ' + l.demande + ', ' + (l.statut === 'valide' ? 'confirmée, cession non saisie' : 'cédée, sans réponse possible') + '.' + annee(l) }),
         deuxTemps('Clore sans réponse', fait('api_clore', [l.demande], l.demande + (l.raison === 'annee_close' ? ' : demande close.' : l.statut === 'valide' ? ' : demande close. Les heures sont libérées.' : ' : demande close. La ligne est dans « Heures à restituer chez l\'employeur ».')),
           { nom: 'Clore sans réponse, demande ' + l.demande })]);
     };
     var aClore = (t.aClore || []).filter(function (l) { return l.raison !== 'annee_close'; }).map(carteAClore);
     var aCloreAnnee = (t.aClore || []).filter(function (l) { return l.raison === 'annee_close'; }).map(carteAClore);
-    var rien = !aSaisir.length && !attenteHeures.length && !aRestituer.length && !aClasser.length && !decisions.length && !aClore.length && !aCloreAnnee.length;
+    var rien = !aSaisir.length && !attenteHeures.length && !aRestituer.length && !aClasser.length && !decisions.length && !aClore.length && !aCloreAnnee.length && !derogations.length;
     var bloc = function (cartes, titre, texte) { return cartes.length ? [el('h2', { texte: titre }), texte ? el('p', { classe: 'aide', texte: texte }) : null, el('div', {}, cartes)] : []; };
     page('Le travail du jour', [navigation(true), annonce(message), retour,
       rien ? el('p', { classe: 'encadre info', texte: 'Rien à traiter aujourd\'hui.' }) : null
@@ -1617,9 +1947,86 @@
       bloc(aClore, 'Demandes à clore sans réponse', 'La fiche de la personne est désactivée : elle ne peut plus répondre. Tu ne réponds pas à sa place. Clore ne dit ni « fait » ni « pas fait » : une demande cédée passe dans « Heures à restituer chez l\'employeur ».'),
       bloc(aCloreAnnee, 'Demandes d\'une année close, à clore', 'Les heures de cette année n\'existent plus et la cession n\'a pas été saisie. Clore ferme la demande : tu ne déclares rien, elle ne dit ni « fait » ni « pas fait ».'),
       bloc(decisions, 'Décisions du bureau à noter', 'Le bureau décide en réunion. Ici, tu notes seulement ce qu\'il a décidé.'),
-      bloc(derogations, 'Refus que tu peux lever', 'Deux refus seulement : la demande arrivée trop tard, et la demande pas confirmée à temps. Le bureau reçoit un mail à chaque fois.')
+      bloc(derogations, 'Refus que tu peux lever', 'Deux refus seulement : la demande arrivée trop tard, et la demande pas confirmée à temps. Le bureau reçoit un mail à chaque fois.'),
+      // Sous les tâches, hors du compte du travail du jour (version 0.15.0).
+      blocCorrections(t.corrections || []),
+      blocLiensNonOuverts(t.liensNonOuverts || []),
+      // Un commentaire déjà sur sa carte de restitution n'est pas répété dans le bloc.
+      blocCommentaires((t.commentaires || []).filter(function (c) {
+        return !t.aRestituer.some(function (l) { return l.demande === c.demande && l.commentaire; });
+      })),
+      blocPropositions(t.propositions || [])
     ));
   };
+
+  /** Une liste sous un titre ; repliée quand elle est longue. */
+  var LONGUE = 5;
+  function blocListe(titre, aideTexte, lignes) {
+    if (!lignes.length) return [];
+    var corps = [aideTexte ? el('p', { classe: 'aide', texte: aideTexte }) : null, el('div', {}, lignes)];
+    if (lignes.length > LONGUE) return [el('details', {}, [el('summary', { texte: titre + ' (' + lignes.length + ')' })].concat(corps))];
+    return [el('h2', { texte: titre })].concat(corps);
+  }
+  /** Une adresse de messagerie : elle ne passe à la ligne qu'après « @ » ou un point, jamais au milieu d'un mot. */
+  function adresseSecable(adresse) {
+    var n = el('span', { classe: 'adresse' });
+    String(adresse).split(/([@.])/).forEach(function (bout) {
+      if (!bout) return;
+      n.appendChild(document.createTextNode(bout));
+      if (bout === '@' || bout === '.') n.appendChild(el('wbr'));
+    });
+    return n;
+  }
+  /** Liens envoyés que personne n'a encore ouverts : nom, adresse, date d'envoi, et la fiche où corriger. */
+  function blocLiensNonOuverts(liste) {
+    return blocListe('Liens envoyés, pas encore ouverts', 'Un lien jamais ouvert peut être parti à une mauvaise adresse.', liste.map(function (x) {
+      return el('div', { classe: 'ligne rang' }, [
+        el('span', { classe: 'nomrang' }, mots(x.nom)),
+        el('span', { classe: 'aide' }, [adresseSecable(x.adresse), ', envoyé le ' + x.envoyeLe]),
+        bouton('Ouvrir la fiche', function () { aller('fiche', x.id); }, 'second', 'Ouvrir la fiche de ' + x.nom)
+      ]);
+    }));
+  }
+  /** Les commentaires des réponses, lus par le bureau : demande, personne, réponse et commentaire, posés par textContent. */
+  function blocCommentaires(liste) {
+    return blocListe('Commentaires des réponses', null, liste.map(function (c) {
+      return el('div', { classe: 'carte' }, [
+        el('h3', { classe: 'num' }, mots(c.personne + ', le ' + c.date)),
+        el('p', { texte: 'Demande ' + c.demande + ', réponse « ' + (c.valeur === 'fait' ? 'oui' : 'non') + ' »' + (c.par === 'accompagnant' ? ' de l\'accompagnant·e' : '') + ', le ' + c.reponduLe + '.' }),
+        el('p', { texte: '« ' + c.commentaire + ' »' })
+      ]);
+    }));
+  }
+  /** Les propositions reçues par « Proposer une amélioration » : date et texte, sans auteur·e. */
+  /**
+   * Réponses corrigées depuis sept jours qui ont retiré une ligne à restituer (contrat A3) : la demande, la personne,
+   * le jour de la correction et ce que la ligne retirée portait. Hors du compte du travail du jour.
+   */
+  var CONSIGNE_CORRECTION = 'Si tu avais déjà restitué ces heures chez l\'employeur, cède-les de nouveau.';
+  var CONSIGNES_CORRECTION = {
+    reponse_attendue: 'Réponse attendue. Si tu avais déjà restitué ces heures chez l\'employeur, attends la nouvelle réponse avant de rien refaire.',
+    fait: 'Nouvelle réponse : oui. Si tu avais déjà restitué ces heures chez l\'employeur, cède-les de nouveau.',
+    pas_fait: 'Nouvelle réponse : non. La ligne à restituer est revenue : si tu avais déjà restitué chez l\'employeur, note-la restituée sans rien refaire.'
+  };
+  function blocCorrections(liste) {
+    var porte = function (l) {
+      if (l.nature === 'restitution_deplacement') return heures(l.heures) + ' de déplacement sur « ' + l.compteur + ' »';
+      return heures(l.heures) + ' sur « ' + l.compteur + ' »' + (l.heuresDeplacement ? ', dont ' + heures(l.heuresDeplacement) + ' de déplacement sur « ' + l.compteurDeplacement + ' »' : '');
+    };
+    return blocListe('Réponses corrigées', null, liste.map(function (c) {
+      return el('div', { classe: 'carte' }, [
+        el('h3', { classe: 'num' }, mots(c.personne + ', demande ' + c.demande)),
+        el('p', { texte: 'Réponse corrigée le ' + c.corrigeLe + '. La ligne à restituer retirée portait ' + (c.lignes || []).map(porte).join(' et ') + '.' }),
+        // La consigne suit l'état présent de la demande (contrat A4). Sans lui (serveur ancien, état rare), la phrase d'avant.
+        el('p', { texte: CONSIGNES_CORRECTION[c.etatActuel] || CONSIGNE_CORRECTION })
+      ]);
+    }));
+  }
+  function blocPropositions(liste) {
+    return blocListe('Propositions reçues', null, liste.map(function (x) {
+      return el('p', { texte: x.date + ' : « ' + x.texte + ' »' });
+    }));
+  }
 
   /**
    * Après « Envoyer son lien » : le lien est mis à l'envoi, il ne part peut-être pas tout de suite
@@ -1672,7 +2079,7 @@
       el('label', { for: 'p-nom', texte: 'Nom' }), nom,
       el('label', { for: 'p-prenom', texte: 'Prénom' }), prenom,
       el('label', { for: 'p-mail', texte: 'Adresse de messagerie personnelle' }),
-      aide('aide-p-mail', 'Pas d\'adresse France Travail ni Pôle emploi : elle serait refusée.'), mail, ajouter
+      aide('aide-p-mail', ERREURS.adresse_employeur), mail, ajouter
     ]);
   };
 
@@ -1688,7 +2095,7 @@
     };
     var nom = champ('nom', 'Nom', 'text', aRemplir ? '' : p.nom);
     var prenom = champ('prenom', 'Prénom', 'text', aRemplir ? '' : p.prenom);
-    var mail = champ('mail', 'Adresse de messagerie personnelle', 'email', p.mail, 'C\'est là que partent le lien et tous les messages de l\'outil. Pas d\'adresse France Travail.');
+    var mail = champ('mail', 'Adresse de messagerie personnelle', 'email', p.mail, 'C\'est là que partent le lien et tous les mails de l\'outil. ' + ERREURS.adresse_employeur);
     var depuis = champ('depuis', 'Date du changement (mandat ou bureau)', 'date', '', 'Laisse vide pour aujourd\'hui.');
     var statut = function (nature, valeur, libelle) {
       return deuxTemps(libelle, function (b) {
@@ -1702,12 +2109,12 @@
           // Un doublon qui n'a jamais servi se supprime ; un doublon qui a une histoire se désactive.
           var cleDoublon = cleUnique();
           return direAdressePrise(retour, r.chez, !p.secretaire ? null : r.chez.supprimable ? [
-            el('p', { texte: 'Si c\'est toi, en double : supprime cette autre fiche. Elle n\'a jamais servi. Son lien s\'éteint et le geste reste au journal.' }),
+            el('p', { texte: 'Si c\'est toi, en double : supprime cette autre fiche. Elle n\'a jamais servi. Son lien ne marche plus et le geste reste au journal.' }),
             bouton('Supprimer le doublon et enregistrer ma fiche', function (b2) {
               appel('api_supprimerPersonne', [JETON, r.chez.id, cleDoublon], function (d) { if (!d.ok) return dire(retour, d); sauver(b2); }, b2);
             })
           ] : [
-            el('p', { texte: 'Si c\'est toi, en double : désactive cette autre fiche. Elle reste au journal, rien n\'est effacé, et son lien s\'éteint.' }),
+            el('p', { texte: 'Si c\'est toi, en double : désactive cette autre fiche. Elle reste au journal, rien n\'est effacé, et son lien ne marche plus.' }),
             bouton('Désactiver le doublon et enregistrer ma fiche', function (b2) {
               appel('api_modifierPersonne', [JETON, r.chez.id, { actif: false }], function (d) { if (!d.ok) return dire(retour, d); sauver(b2); }, b2);
             })
@@ -1718,7 +2125,7 @@
           // Le serveur vient de dire où en est la mise en route : on y retourne tant qu'elle n'est pas finie.
           var versRoute = p.secretaire && !routeFinie();
           if (p.secretaire) return aller(versRoute ? 'route' : 'fiche', id, 'Ta fiche est enregistrée.' + (versRoute ? ' Étape suivante : t\'envoyer ton lien.' : ''));
-          aller('fiche', id, r.lienCoupe ? { genre: 'afaire', texte: 'Adresse changée. L\'ancien lien est coupé : envoie-lui un nouveau lien.' } : 'Fiche enregistrée.');
+          aller('fiche', id, r.lienCoupe ? { genre: 'afaire', texte: 'Adresse changée. L\'ancien lien ne marche plus : envoie-lui un nouveau lien.' } : 'Fiche enregistrée.');
         });
       }, b);
     };
@@ -1731,11 +2138,15 @@
         })];
     } else {
       blocLien = [el('p', { texte: p.lien ? 'Cette personne a reçu son lien.' : 'Pas encore de lien. Tant qu\'elle ne l\'a pas reçu, elle ne peut rien demander.' }),
-        el('p', { classe: 'aide', texte: 'Le lien part à l\'adresse de la fiche. S\'il y en avait déjà un, il ne marche plus.' }),
-        bouton(p.lien ? 'Envoyer un nouveau lien' : 'Envoyer son lien', function (b) {
+        // Un lien envoyé par le secrétaire remplace tous les liens de la personne (Personnes.liensCourants) : avec un lien en cours, deux appuis.
+        el('p', { classe: 'aide', texte: p.lien ? 'Le nouveau lien part à l\'adresse de la fiche. Dès son envoi, ses liens d\'avant ne marchent plus, y compris ceux qu\'elle a demandés elle-même.'
+          : 'Le lien part à l\'adresse de la fiche.' }),
+        p.lien ? deuxTemps('Envoyer un nouveau lien', function (b) {
           appel('api_gererLien', [JETON, p.id, 'envoyer'], suiteGeste('fiche', id, lienMisALEnvoi(p), retour), b);
-        }, p.lien ? 'second' : 'envoi'),
-        p.lien ? deuxTemps('Couper son lien', function (b) { appel('api_gererLien', [JETON, p.id, 'revoquer'], suiteGeste('fiche', id, 'Lien coupé.', retour), b); }) : null];
+        }, { nom: 'Envoyer un nouveau lien à ' + nomDe(p) }) : bouton('Envoyer son lien', function (b) {
+          appel('api_gererLien', [JETON, p.id, 'envoyer'], suiteGeste('fiche', id, lienMisALEnvoi(p), retour), b);
+        }, 'envoi'),
+        p.lien ? deuxTemps('Couper son lien', function (b) { appel('api_gererLien', [JETON, p.id, 'revoquer'], suiteGeste('fiche', id, 'Son lien ne marche plus.', retour), b); }) : null];
     }
     var versRoute = p.secretaire && !routeFinie();
     // La clé se tire au dessin : deux appuis portent la même, la suppression ne se joue qu'une fois.
@@ -1754,7 +2165,7 @@
       p.bureau ? statut('bureau', false, 'Faire sortir du bureau') : statut('bureau', true, 'Faire entrer au bureau'),
       p.secretaire ? null : el('h2', { texte: '4. Désactiver ou supprimer' }),
       p.secretaire ? null : deuxTemps(p.actif ? 'Désactiver la fiche' : 'Réactiver la fiche', function (b) {
-        appel('api_modifierPersonne', [JETON, p.id, { actif: !p.actif }], suiteGeste('fiche', id, p.actif ? 'Fiche désactivée, lien coupé.' : 'Fiche réactivée.', retour), b);
+        appel('api_modifierPersonne', [JETON, p.id, { actif: !p.actif }], suiteGeste('fiche', id, p.actif ? 'Fiche désactivée. Son lien ne marche plus.' : 'Fiche réactivée.', retour), b);
       }),
       p.secretaire ? null : el('p', { classe: 'aide', texte: p.actif ? 'Désactiver : le lien ne marche plus, la fiche reste au journal.' : 'Réactiver : la fiche redevient active.' }),
       p.secretaire ? null : deuxTemps('Supprimer cette fiche', function (b) {
@@ -1909,10 +2320,10 @@
       var retourTache = el('span');
       var tache = bouton('Jouer la tâche quotidienne', function (b) {
         appel('api_tacheTest', [CLE], function (t) {
-          retourTache.textContent = t.ok ? ' Extinctions : ' + t.bilan.expirations + ', liens d\'état : ' + t.bilan.liens + ', relances : ' + t.bilan.relances + ', mains passées : ' + t.bilan.transferts + '. Recharge la page pour voir les messages.' : ' Échec.';
+          retourTache.textContent = typo(t.ok ? ' Extinctions : ' + t.bilan.expirations + ', liens d\'état : ' + t.bilan.liens + ', relances : ' + t.bilan.relances + ', mains passées : ' + t.bilan.transferts + '. Recharge la page pour voir les mails.' : ' Échec.');
         }, b);
       }, 'second');
-      page('Boîte de test', [el('p', { classe: 'encadre test', texte: 'Environnement de TEST : les derniers messages partis, du plus récent au plus ancien. Cette page n\'existe pas en production.' }), el('p', {}, [tache, retourTache])]
+      page('Boîte de test', [el('p', { classe: 'encadre test', texte: 'Environnement de TEST : les derniers mails partis, du plus récent au plus ancien. Cette page n\'existe pas en production.' }), el('p', {}, [tache, retourTache])]
         .concat(r.messages.map(function (m) {
           // Le corps du mail est montré tel qu'il part, sans retouche.
           var corps = el('pre');
@@ -1939,7 +2350,7 @@
     var ouvrir = function () {
       var lu = jetonDuLien(champ.value);
       if (!lu) {
-        vider(retour).appendChild(erreur('Ce lien n\'est pas reconnu. Copie-le en entier depuis le mail.'));
+        signaler(retour, 'Ce lien n\'est pas reconnu. Copie-le en entier depuis le mail.');
         return;
       }
       // Le jeton passe après le « # » : le changement d'adresse recharge la page sur la bonne vue.
