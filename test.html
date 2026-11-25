@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="referrer" content="no-referrer">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-ucxv6AtCv3yCdRqT6FSGV/1gcyfMNQd4ypNUkl7XWG4='; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src data:; connect-src https://script.google.com https://script.googleusercontent.com; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-TwaRWg96UFQsbyVd0LaQRndaMdUdHlM4Gu8L9v2NIeg='; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src data:; connect-src https://script.google.com https://script.googleusercontent.com; base-uri 'none'; form-action 'none'">
 <title>Heures 77, TEST</title>
 <!-- Fichier produit par outils/construire-entree.js à partir de src/html/page.html. Ne pas modifier à la main. -->
 <!-- Polices de la charte. Si le chargement échoue, Georgia et Segoe UI prennent le relais : la page reste lisible.
@@ -149,7 +149,7 @@
 // Tout ce que la page doit savoir se lit après le « # » : cette partie de l'adresse ne part jamais vers l'hébergeur.
 (function () {
   'use strict';
-  var EXEC = "https://script.google.com/macros/s/AKfycbwGIGtDPT4hZvmjWE4v0VTvr8CGE3DHLxsvrPaEQBEK-otXtV1BeVVDIhSSlu2EEZGK/exec", VERSION = "0.12.1", TEST = true;
+  var EXEC = "https://script.google.com/macros/s/AKfycbwGIGtDPT4hZvmjWE4v0VTvr8CGE3DHLxsvrPaEQBEK-otXtV1BeVVDIhSSlu2EEZGK/exec", VERSION = "0.12.2", TEST = true;
   var app = document.getElementById('app');
   function lire(texte) {
     var lu = Object.create(null);
@@ -384,6 +384,7 @@
     jour_j_ou_apres: 'Ce n\'est plus possible le jour même ni après.', statut: 'L\'état de la demande ne le permet pas.',
     hors_delai: 'Le délai d\'un mois est passé.', contestation_deja_ouverte: 'Une contestation est déjà ouverte.',
     contestation_deja_tranchee: 'Le bureau a déjà tranché sur ce point.', annee_close: 'Les heures de cette année n\'existent plus : ce geste ne se saisit plus.', contestation_ouverte: 'Une contestation est ouverte sur cette demande : la décision du bureau d\'abord.',
+    attestation_manquante: 'Coche la case d\'attestation.',
     heures_couvertes: 'Les heures reçues couvrent cette demande : il n\'y a pas de refus à noter.',
     annee_ouverte: 'Les heures de cette année existent encore : la ligne se règle par la restitution.', etat_de_la_personne: 'Cet état vient de toi : il n\'y a rien à contester.',
     fiche_active: 'Cette fiche est active : la personne peut encore répondre.',
@@ -545,8 +546,8 @@
   var AIDES_COMPTEURS = {
     MT: 'le temps de l\'activité elle-même (visite, réunion, travail sur un texte)',
     ME: 'le temps de l\'activité, sur la part réservée aux titulaires de mandat',
-    DT: 'le temps de trajet pour t\'y rendre',
-    DE: 'le temps de trajet, sur la part réservée aux titulaires de mandat'
+    DT: 'le temps de trajet, pour une note de frais. Chaque heure de déplacement demande aussi une heure de mandat le même jour',
+    DE: 'le temps de trajet, pour une note de frais, sur la part réservée aux titulaires de mandat. Chaque heure de déplacement demande aussi une heure de mandat le même jour'
   };
 
   // ------------------------------------------------------------------ accueil
@@ -641,10 +642,12 @@
       }
       var mot = el('textarea', { id: 'mot', maxlength: String(r.commentaireMax), 'aria-describedby': 'aide-mot' });
       var utilise = r.dateUtilisationAttendue ? el('input', { type: 'date', id: 'utilise', max: aujourdhuiIso(), 'aria-describedby': 'aide-utilise' }) : null;
+      var atteste = el('input', { type: 'checkbox', id: 'attestation', 'aria-required': 'true' });
       var repondre = function (valeur) {
         return function (b) {
           if (valeur === 'fait' && utilise && !utilise.value) return vider(retour).appendChild(erreur(ERREURS.date_utilisation_manquante));
-          appel('api_declarerEtat', [JETON, valeur, mot.value, valeur === 'fait' && utilise ? dateFr(utilise.value) : ''], function (c) {
+          if (!atteste.checked) return vider(retour).appendChild(erreur(ERREURS.attestation_manquante));
+          appel('api_declarerEtat', [JETON, valeur, mot.value, valeur === 'fait' && utilise ? dateFr(utilise.value) : '', atteste.checked === true], function (c) {
             if (!c.ok) return dire(retour, c);
             if (c.sansEffet) return dejaTraite(c);
             fini('C\'est noté', 'Demande ' + d.id + ' : ' + (c.valeur === 'fait' ? 'elle a eu lieu.' : 'elle n\'a pas eu lieu.'), 'reussite');
@@ -660,6 +663,7 @@
         utilise ? el('label', { for: 'utilise', texte: LIBELLE_UTILISATION }) : null,
         utilise ? aide('aide-utilise', AIDE_UTILISATION) : null,
         utilise,
+        el('div', { classe: 'case' }, [atteste, el('label', { for: 'attestation', texte: 'J\'atteste que ma déclaration est exacte.' })]),
         bouton('Oui, elle a eu lieu', repondre('fait')),
         bouton('Non, elle n\'a pas eu lieu', repondre('pas_fait')),
         retour]);
@@ -828,7 +832,7 @@
       el('label', { for: 'heures', texte: 'Nombre d\'heures' }),
       aide('aide-heures', 'Par demi-heures, ou par demi-journées de 3,75 h. Exemple : 7,5. Une demande couvre une journée au plus : 7,5 heures.'), nb,
       el('label', { for: 'compteur', texte: 'Compteur' }), aideCompteur, compteur,
-      el('div', { classe: 'case' }, [accord, el('label', { for: 'accord', texte: 'J\'accepte que le secrétaire cède ces heures à mon nom chez France Travail.' })]),
+      el('div', { classe: 'case' }, [accord, el('label', { for: 'accord', texte: 'J\'accepte que le secrétaire procède à une cession d\'heures à mon nom, visible par le service des Relations Sociales de France Travail.' })]),
       envoyer, retour
     ]);
   }
@@ -906,6 +910,7 @@
       // Clé tirée au dessin de la carte : deux appuis rapides sur « Oui » portent la même clé.
       var cleOui = cleUnique();
       var cleNon = cleUnique();
+      var atteste = el('input', { type: 'checkbox', id: 'attestation-' + d.id, 'aria-required': 'true' });
       var commentaire = el('textarea', { id: 'commentaire-' + d.id, maxlength: String(COMMENTAIRE_MAX), 'aria-describedby': 'aide-commentaire-' + d.id });
       lignes.push(el('p', { classe: 'encadre', texte: 'À faire : cette activité a-t-elle eu lieu ?' }),
         el('label', { for: 'utilise-' + d.id, texte: LIBELLE_UTILISATION }),
@@ -913,11 +918,16 @@
         el('label', { for: 'commentaire-' + d.id, texte: 'Commentaire (facultatif)' }),
         aide('aide-commentaire-' + d.id, 'Ne nomme personne, n\'écris rien sur la santé ou la vie privée. ' + COMMENTAIRE_MAX + ' caractères au plus.'),
         commentaire,
+        el('div', { classe: 'case' }, [atteste, el('label', { for: 'attestation-' + d.id, texte: 'J\'atteste que ma déclaration est exacte.' })]),
         bouton('Oui, elle a eu lieu', function (b) {
           if (!utilise.value) return vider(retour).appendChild(erreur(ERREURS.date_utilisation_manquante));
-          agir('api_declarerEtatEspace', function () { return [JETON, d.id, 'fait', commentaire.value, cleOui, dateFr(utilise.value)]; }, 'C\'est noté : elle a eu lieu.')(b);
+          if (!atteste.checked) return vider(retour).appendChild(erreur(ERREURS.attestation_manquante));
+          agir('api_declarerEtatEspace', function () { return [JETON, d.id, 'fait', commentaire.value, cleOui, dateFr(utilise.value), atteste.checked === true]; }, 'C\'est noté : elle a eu lieu.')(b);
         }, '', 'Oui, elle a eu lieu, demande ' + d.id),
-        bouton('Non, elle n\'a pas eu lieu', agir('api_declarerEtatEspace', function () { return [JETON, d.id, 'pas_fait', commentaire.value, cleNon]; }, 'C\'est noté : elle n\'a pas eu lieu.'), '', 'Non, elle n\'a pas eu lieu, demande ' + d.id));
+        bouton('Non, elle n\'a pas eu lieu', function (b) {
+          if (!atteste.checked) return vider(retour).appendChild(erreur(ERREURS.attestation_manquante));
+          agir('api_declarerEtatEspace', function () { return [JETON, d.id, 'pas_fait', commentaire.value, cleNon, '', atteste.checked === true]; }, 'C\'est noté : elle n\'a pas eu lieu.')(b);
+        }, '', 'Non, elle n\'a pas eu lieu, demande ' + d.id));
     }
     if (a.reporter) {
       var nouvelle = el('input', { type: 'date', id: 'report-' + d.id, max: d.exercice ? d.exercice + '-12-31' : null });
