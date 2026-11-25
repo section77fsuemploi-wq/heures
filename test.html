@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="referrer" content="no-referrer">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-3t89hyKY22rI3QhzdqbCYUwjjHtP1dquU/yeGNKeans='; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src data:; connect-src https://script.google.com https://script.googleusercontent.com; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-PAs5TRkLb/5PItoCtC71NMEnZpJiN1tDwQ4scgmVRCI='; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src data:; connect-src https://script.google.com https://script.googleusercontent.com; base-uri 'none'; form-action 'none'">
 <title>Heures 77, TEST</title>
 <!-- Fichier produit par outils/construire-entree.js à partir de src/html/page.html. Ne pas modifier à la main. -->
 <!-- Polices de la charte. Si le chargement échoue, Georgia et Segoe UI prennent le relais : la page reste lisible.
@@ -378,7 +378,10 @@
   function pointsEnCause(erreurs) {
     return el('ul', {}, erreurs.map(function (x) {
       if (x.champ === 'consentementTransmission') return el('li', { texte: 'Accord de cession : coche la case.' });
-      var motif = x.champ === 'heures' && x.motif === 'format' ? 'écris un nombre, par exemple 7,5' : (MOTIFS[x.motif] || x.motif);
+      var motif = x.champ === 'heures' && x.motif === 'format' ? 'écris un nombre, par exemple 7,5'
+        // Le déplacement se compte par demi-heure seulement : pas de demi-journée de 3,75 h.
+        : x.champ === 'heuresDeplacement' && x.motif === 'pas_non_admis' ? 'par demi-heures (0,5, 1, 1,5…)'
+        : (MOTIFS[x.motif] || x.motif);
       return el('li', { texte: (CHAMPS[x.champ] || x.champ) + ' : ' + motif });
     }));
   }
@@ -419,6 +422,12 @@
   };
   /** Avant le vote de la règle : un fait et une consigne, une phrase par motif. Pas de code : il est réservé aux refus réels. */
   /** Sur la page « Demande refusée » : d'abord quoi faire. */
+  /** Le solde qui manque, pour une demande avec déplacement (version 0.13.0). */
+  var CONSEILS_R5 = {
+    mandat: 'Dépose une nouvelle demande pour moins d\'heures.',
+    deplacement: 'Dépose une nouvelle demande avec moins d\'heures de déplacement, ou sans déplacement.',
+    les_deux: 'Dépose une nouvelle demande pour moins d\'heures, avec moins d\'heures de déplacement ou sans déplacement.'
+  };
   var CONSEILS_REFUS = {
     R1: 'Dépose une nouvelle demande, avec une date plus lointaine.',
     R2: 'Réponds sur la carte de cette demande, dans ton espace, puis dépose une nouvelle demande.',
@@ -439,8 +448,10 @@
       'Les autres refus de la règle sont calculés et affichés, sans être opposés.';
   }
   /** Demande acceptée à crédit : la section n'a encore reçu aucune heure de son année. Même phrase que le mail (Messages.phraseReserve). */
-  function phraseReserve(annee) {
-    return 'Ta demande est acceptée sous réserve : la section n\'a pas encore reçu ses heures ' + annee + '. Le secrétaire te les cède si les heures reçues le permettent.';
+  /** reserve : 'annee' (ou absent), 'mandat' ou 'deplacement' : la famille d'heures qui manque (même phrase que le mail). */
+  function phraseReserve(annee, reserve) {
+    var quoi = reserve === 'deplacement' ? 'ses heures de déplacement ' : reserve === 'mandat' ? 'ses heures de mandat ' : 'ses heures ';
+    return 'Ta demande est acceptée sous réserve : la section n\'a pas encore reçu ' + quoi + annee + '. Le secrétaire te les cède si les heures reçues le permettent.';
   }
   // Délai de confirmation lu au dernier appel qui le donne, pour la phrase sur R6.
   var CONFIRMATION_HEURES = null;
@@ -633,14 +644,17 @@
             if (c.sansEffet) return dejaTraite(c);
             if (c.resultat === 'valide') {
               // Sans heure reçue sur l'année de la demande, la confirmation dit la réserve au lieu de promettre la cession.
-              return fini('C\'est confirmé', 'Demande ' + d.id + ' confirmée. ' + (c.attenteHeures && c.exercice ? phraseReserve(c.exercice) + ' Quand tu les as reçues, saisis ta demande d\'absence sur ton propre compte.'
+              return fini('C\'est confirmé', 'Demande ' + d.id + ' confirmée. ' + (c.attenteHeures && c.exercice ? phraseReserve(c.exercice, c.reserve) + ' Quand tu les as reçues, saisis ta demande d\'absence sur ton propre compte.'
                 : 'Le secrétaire va te céder les heures. Quand tu les as reçues, saisis ta demande d\'absence sur ton propre compte.'), 'reussite',
                 c.refusNonOppose ? [el('p', { classe: 'encadre info', texte: phraseEssai(c.refusNonOppose, 'ta demande', r.dateEffet, r.confirmationHeures) })] : []);
             }
             var refus = 'La demande ' + d.id + ' est refusée. ' + phraseRefus(c.refus);
             // Le serveur dit les points en cause (champ et motif) : la page les écrit comme au dépôt.
             var points = c.erreurs && c.erreurs.length ? [el('p', { texte: 'Les points en cause :' }), pointsEnCause(c.erreurs)] : [];
-            var conseil = points.length ? 'Dépose une nouvelle demande qui tient compte de ces points.' : (CONSEILS_REFUS[c.refus.code] || 'Dépose une nouvelle demande.');
+            var conseil = points.length ? 'Dépose une nouvelle demande qui tient compte de ces points.'
+              // R5 d'une demande avec déplacement : le conseil suit le solde qui manque.
+              : c.refus.code === 'R5' && CONSEILS_R5[c.refus.manque] ? CONSEILS_R5[c.refus.manque]
+              : (CONSEILS_REFUS[c.refus.code] || 'Dépose une nouvelle demande.');
             var premiere = c.premiereDatePossible ? [el('p', { texte: 'Première date possible si tu confirmes aujourd\'hui : ' + jourEtDate(c.premiereDatePossible) + '.' })] : [];
             page('Demande refusée', [erreur(refus)].concat(points, premiere, [
               el('p', { texte: conseil + ' Tu peux aussi contester ce refus dans le mois : ouvre ton lien personnel, puis le bouton « Contester le refus » sous cette demande.' })]));
@@ -854,7 +868,8 @@
     date.addEventListener('input', suivreDate);
     var retour = el('div');
     var envoyer = bouton('Envoyer la demande', function (b) {
-      var avecDeplacement = String(nbDeplacement.value || '').trim() !== '';
+      // Champ vide ou « 0 » : pas de déplacement, et aucun compteur de déplacement n'est envoyé.
+      var avecDeplacement = (lireNombre(nbDeplacement.value) || 0) > 0 || (String(nbDeplacement.value || '').trim() !== '' && lireNombre(nbDeplacement.value) === null);
       var f = { date: dateFr(date.value), objet: objet.value, site: site.value, heures: nb.value, compteur: compteur.value,
         heuresDeplacement: avecDeplacement ? nbDeplacement.value : '',
         compteurDeplacement: avecDeplacement ? (mandatALaDate() ? compteurDeplacement.value : (tousDeplacement ? tousDeplacement.code : '')) : '',
@@ -932,7 +947,7 @@
       el('p', { texte: 'État : ' + d.statutLibelle + (d.essai ? ' (avant le vote de la règle)' : '') + '.' })
     ];
     if (d.exercice && ANNEE && d.exercice !== ANNEE) lignes.push(el('p', { texte: 'Sur les heures ' + d.exercice + '.' }));
-    if (d.attenteHeures) lignes.push(el('p', { texte: phraseReserve(d.exercice) }));
+    if (d.attenteHeures) lignes.push(el('p', { texte: phraseReserve(d.exercice, d.reserve) }));
     else if (d.auDelaDesHeures) lignes.push(el('p', { texte: 'Ta demande est acceptée sous réserve : les heures ' + d.exercice + ' reçues par la section ne la couvrent pas encore. Le secrétaire la cède si les heures reçues le permettent.' }));
     if (d.statut === 'deposee') lignes.push(el('p', { classe: 'encadre', texte: 'À faire : ouvre le mail « Demande ' + d.id + ' à confirmer » et clique sur « Confirmer ma demande ».' }));
     if (d.refus) lignes.push(el('p', { texte: 'Motif : ' + phraseRefus(d.refus) }));
